@@ -1,0 +1,1798 @@
+{
+  "_meta": {
+    "source": "Extracted from 5 Dribbble UI references: fintech dashboard, settings/subscription panel, notifications screen, smart home app, EduWay edtech dashboard (iPad)",
+    "target": "NFCS UNN Portal — Next.js + Tailwind CSS + Supabase implementation",
+    "theme": "Clean minimal admin portal — light mode primary, neutral grays, one strong brand accent (NFCS deep forest green)",
+    "version": "2.0 — includes EduWay edtech dashboard patterns (task lists, note cards, schedule tables, pill filter tabs, progress bars, sidebar badge counts)",
+    "addedContext": "Session-based dues payment: students pay per academic session; payment history must show session labels (e.g. '2024/2025 Session')",
+    "tailwindNote": "All hex values map to custom Tailwind tokens. Use CSS variables for consistent theming."
+  },
+
+  "DO_NOT_RULES": {
+    "gradients": [
+      "DO NOT apply card-background gradients to icons or icon containers",
+      "DO NOT use button gradients on text elements",
+      "DO NOT apply sidebar active gradient to the full sidebar background — only to the active nav item pill",
+      "DO NOT use note/tag card colors (green, purple, amber) on form inputs or table rows",
+      "DO NOT apply page background color to modal/dialog backgrounds — modals use #FFFFFF",
+      "DO NOT apply EduWay-style soft mint page background (#E8EDE8) to card surfaces — cards stay #FFFFFF"
+    ],
+    "shadows": [
+      "DO NOT add drop shadows to flat icon fills",
+      "DO NOT apply card shadows to table rows — tables use dividers only",
+      "DO NOT add shadows to sidebar navigation items",
+      "DO NOT shadow the page-level background container",
+      "DO NOT add shadow to task list items — they sit on a white panel, not floating cards"
+    ],
+    "borders": [
+      "DO NOT add borders to selected/active nav items — use background fill instead",
+      "DO NOT add borders to primary buttons",
+      "DO NOT apply card border-radius to table cells — only to the table wrapper",
+      "DO NOT add a visible border to note cards (green, purple) — they use background color alone"
+    ],
+    "colors": [
+      "DO NOT use primary accent color for body text",
+      "DO NOT use muted/secondary text color for headings",
+      "DO NOT apply badge background colors directly to text without the pill/badge wrapper",
+      "DO NOT use white text on light-colored note cards (green/purple/amber) — use dark text for contrast",
+      "DO NOT use the progress bar fill color (#134116) for task status badges — use specific badge tokens instead",
+      "DO NOT apply schedule table row hover to the header row"
+    ],
+    "layout": [
+      "DO NOT collapse the three-column dashboard layout (sidebar + task panel + notes/schedule panel) to a single column without intentional responsive breakpoints",
+      "DO NOT make the sidebar the same background as the page — sidebar is always #FFFFFF on a tinted page bg",
+      "DO NOT stack pill filter tabs vertically — they are always horizontal overflow-x-auto on mobile"
+    ]
+  },
+
+  "tokens": {
+    "colors": {
+      "brand": {
+        "primary": "#091D0A",
+        "primaryAccent": "#134116",
+        "accentLight": "#F0FDF4",
+        "accentBorder": "#BBF7D0",
+        "danger": "#CA3E1E",
+        "comment": "NFCS official brand colors. Primary accent used for sidebar active states, CTAs, focus rings, and session labels."
+      },
+      "neutrals": {
+        "white": "#FFFFFF",
+        "pageBackground": "#F4F6F8",
+        "pageBackgroundMint": "#EAEDE8",
+        "surfaceSubtle": "#F9FAFB",
+        "border": "#E5E7EB",
+        "borderLight": "#F0F1F3",
+        "divider": "#EBEBEB",
+        "comment": "pageBackgroundMint is the EduWay-style soft warm-green tint used behind the main content area. pageBackground (#F4F6F8) is the default cool off-white."
+      },
+      "text": {
+        "primary": "#111827",
+        "secondary": "#6B7280",
+        "tertiary": "#9CA3AF",
+        "onDark": "#FFFFFF",
+        "onAccent": "#FFFFFF",
+        "link": "#134116",
+        "danger": "#CA3E1E",
+        "muted": "#D1D5DB"
+      },
+      "status": {
+        "successBackground": "#D1FAE5",
+        "successText": "#065F46",
+        "successBorder": "#6EE7B7",
+        "warningBackground": "#FEF3C7",
+        "warningText": "#92400E",
+        "warningBorder": "#FCD34D",
+        "errorBackground": "#FEE2E2",
+        "errorText": "#991B1B",
+        "errorBorder": "#FCA5A5",
+        "infoBackground": "#DBEAFE",
+        "infoText": "#1E40AF",
+        "infoBorder": "#93C5FD",
+        "pendingBackground": "#FEF9C3",
+        "pendingText": "#854D0E",
+        "pendingBorder": "#FDE68A"
+      },
+      "roleAccents": {
+        "student": "#1D4ED8",
+        "studentBackground": "#DBEAFE",
+        "alumnus": "#7C3AED",
+        "alumnusBackground": "#EDE9FE",
+        "exco": "#065F46",
+        "excoBackground": "#D1FAE5",
+        "superAdmin": "#CA3E1E",
+        "superAdminBackground": "#FEE2E2"
+      },
+      "dataViz": {
+        "bar1": "#134116",
+        "bar2": "#6EE7B7",
+        "bar3": "#FCD34D",
+        "bar4": "#C4B5FD",
+        "lineStroke": "#134116",
+        "lineArea": "rgba(19, 65, 22, 0.08)"
+      },
+      "noteCards": {
+        "green": "#BBFCCC",
+        "greenSurface": "#9EF9B3",
+        "greenText": "#064E3B",
+        "greenSubtext": "#065F46",
+        "greenMeta": "#059669",
+        "purple": "#C4B5FD",
+        "purpleSurface": "#A78BFA",
+        "purpleText": "#3B0764",
+        "purpleSubtext": "#4C1D95",
+        "purpleMeta": "#6D28D9",
+        "amber": "#FDE68A",
+        "amberText": "#78350F",
+        "amberSubtext": "#92400E",
+        "blue": "#BFDBFE",
+        "blueText": "#1E3A8A",
+        "comment": "Note card backgrounds are solid pastel fills — NOT gradients. DO NOT apply border to note cards."
+      },
+      "taskStatus": {
+        "inProgress": {
+          "background": "#FDE68A",
+          "text": "#78350F",
+          "comment": "EduWay amber pill for in-progress tasks"
+        },
+        "todo": {
+          "background": "#DBEAFE",
+          "text": "#1E40AF"
+        },
+        "done": {
+          "background": "#D1FAE5",
+          "text": "#065F46"
+        },
+        "overdue": {
+          "background": "#FEE2E2",
+          "text": "#991B1B"
+        }
+      }
+    },
+
+    "typography": {
+      "fontFamily": {
+        "sans": "'Inter', 'DM Sans', system-ui, sans-serif",
+        "mono": "'JetBrains Mono', 'Fira Code', monospace",
+        "display": "'Inter', system-ui, sans-serif",
+        "comment": "Inter is the base. For display headings (dashboard KPIs, modal titles), use Inter Bold 700. For data tables, use JetBrains Mono for matric numbers, payment refs, session labels."
+      },
+      "scale": {
+        "xs": "11px",
+        "sm": "12px",
+        "base": "13px",
+        "md": "14px",
+        "lg": "15px",
+        "xl": "16px",
+        "2xl": "18px",
+        "3xl": "20px",
+        "4xl": "24px",
+        "5xl": "28px",
+        "6xl": "32px"
+      },
+      "weight": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "lineHeight": {
+        "tight": "1.2",
+        "snug": "1.35",
+        "normal": "1.5",
+        "relaxed": "1.75"
+      },
+      "letterSpacing": {
+        "tight": "-0.01em",
+        "normal": "0em",
+        "wide": "0.04em",
+        "wider": "0.06em",
+        "widest": "0.08em"
+      }
+    },
+
+    "spacing": {
+      "1": "4px",
+      "2": "8px",
+      "3": "12px",
+      "4": "16px",
+      "5": "20px",
+      "6": "24px",
+      "8": "32px",
+      "10": "40px",
+      "12": "48px",
+      "16": "64px"
+    },
+
+    "borderRadius": {
+      "sm": "6px",
+      "md": "8px",
+      "lg": "10px",
+      "xl": "12px",
+      "2xl": "16px",
+      "3xl": "20px",
+      "full": "9999px",
+      "contextRules": {
+        "cards": "12px",
+        "modals": "16px",
+        "buttons": "8px",
+        "inputs": "8px",
+        "badges": "9999px (full pill)",
+        "sessionBadges": "6px (rectangular pill, not full round)",
+        "noteCards": "12px",
+        "navActiveItem": "8px",
+        "dropdownMenu": "10px",
+        "dropdownItem": "6px",
+        "tableWrapper": "12px",
+        "tableRows": "0px — no radius on rows, only on wrapper",
+        "avatars": "9999px",
+        "progressBar": "9999px",
+        "taskStatusPill": "9999px"
+      }
+    },
+
+    "shadows": {
+      "card": "0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)",
+      "cardHover": "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)",
+      "modal": "0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)",
+      "dropdown": "0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)",
+      "button": "none",
+      "input": "none",
+      "inputFocus": "0 0 0 3px rgba(19,65,22,0.15)",
+      "inputError": "0 0 0 3px rgba(202,62,30,0.12)",
+      "pillTabActive": "0 1px 3px rgba(0,0,0,0.08)",
+      "noteCard": "none",
+      "tableRow": "none",
+      "avatar": "none",
+      "sidebarItem": "none"
+    },
+
+    "transitions": {
+      "fast": "100ms ease",
+      "base": "150ms ease",
+      "slow": "250ms ease",
+      "spring": "200ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+      "property": "background-color, border-color, color, box-shadow, transform, opacity"
+    },
+
+    "zIndex": {
+      "base": 0,
+      "raised": 10,
+      "dropdown": 100,
+      "sticky": 200,
+      "overlay": 300,
+      "modal": 400,
+      "toast": 500
+    }
+  },
+
+  "layout": {
+    "pageShell": {
+      "background": "#F4F6F8",
+      "minHeight": "100vh",
+      "display": "flex",
+      "comment": "Page-level background is a cool off-white. Cards sit on top. Use #EAEDE8 as alternative if the mint-green EduWay tone is preferred."
+    },
+    "sidebar": {
+      "width": "220px",
+      "collapsedWidth": "64px",
+      "background": "#FFFFFF",
+      "borderRight": "1px solid #E5E7EB",
+      "padding": "16px 12px",
+      "shadow": "none",
+      "position": "fixed left, full height",
+      "comment": "Sidebar is always white on a tinted page. Never tinted, never transparent."
+    },
+    "topbar": {
+      "height": "60px",
+      "background": "#FFFFFF",
+      "borderBottom": "1px solid #F0F1F3",
+      "padding": "0 24px",
+      "shadow": "none",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "space-between"
+    },
+    "contentArea": {
+      "padding": "24px",
+      "maxWidth": "1280px",
+      "gap": "20px",
+      "marginLeft": "220px"
+    },
+    "dashboardGrid": {
+      "threeColumn": {
+        "comment": "EduWay-style: sidebar + main task panel + side notes/schedule panel",
+        "structure": "sidebar(220px) + main(1fr) + right-panel(340px)",
+        "gap": "20px"
+      },
+      "statsRow": {
+        "structure": "repeat(4, 1fr)",
+        "tabletBreakpoint": "repeat(2, 1fr)",
+        "mobileBreakpoint": "1fr",
+        "gap": "20px"
+      },
+      "mainContent": {
+        "structure": "1fr 320px",
+        "gap": "20px"
+      }
+    }
+  },
+
+  "components": {
+    "sidebar": {
+      "brand": {
+        "logoContainer": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "10px",
+          "padding": "0 8px 20px",
+          "borderBottom": "1px solid #F0F1F3",
+          "marginBottom": "16px"
+        },
+        "logoMark": {
+          "width": "32px",
+          "height": "32px",
+          "borderRadius": "8px",
+          "background": "#091D0A",
+          "comment": "Brand logomark — solid dark NFCS green, NOT gradient"
+        },
+        "appName": {
+          "fontSize": "15px",
+          "fontWeight": 600,
+          "color": "#111827"
+        },
+        "appTagline": {
+          "fontSize": "11px",
+          "color": "#9CA3AF"
+        }
+      },
+      "sectionLabel": {
+        "fontSize": "11px",
+        "fontWeight": 600,
+        "color": "#9CA3AF",
+        "textTransform": "uppercase",
+        "letterSpacing": "0.06em",
+        "padding": "0 8px",
+        "marginBottom": "4px",
+        "marginTop": "16px"
+      },
+      "navItem": {
+        "default": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "10px",
+          "padding": "8px 10px",
+          "borderRadius": "8px",
+          "background": "transparent",
+          "color": "#6B7280",
+          "fontSize": "14px",
+          "fontWeight": 500,
+          "cursor": "pointer",
+          "transition": "all 150ms ease",
+          "icon": {
+            "size": "18px",
+            "color": "#9CA3AF",
+            "comment": "Nav icons are muted tertiary in default state"
+          }
+        },
+        "hover": {
+          "background": "#F4F6F8",
+          "color": "#111827",
+          "icon": { "color": "#6B7280" }
+        },
+        "active": {
+          "background": "#091D0A",
+          "color": "#FFFFFF",
+          "fontWeight": 600,
+          "icon": {
+            "color": "#FFFFFF",
+            "comment": "Active state: icons turn white. DO NOT keep them green."
+          },
+          "comment": "Full dark pill — no left border indicator, no underline"
+        },
+        "badge": {
+          "comment": "EduWay-style notification count badge on nav items (Tasks: 5, Chat: 2, Notes: 3)",
+          "background": "#6366F1",
+          "color": "#FFFFFF",
+          "fontSize": "11px",
+          "fontWeight": 600,
+          "borderRadius": "9999px",
+          "padding": "1px 7px",
+          "minWidth": "20px",
+          "textAlign": "center",
+          "marginLeft": "auto",
+          "variants": {
+            "primary": {
+              "background": "#6366F1",
+              "comment": "Default badge uses indigo — matches EduWay reference"
+            },
+            "attention": {
+              "background": "#CA3E1E",
+              "comment": "Use danger red for critical count (overdue dues, pending approvals)"
+            },
+            "success": { "background": "#134116" }
+          }
+        }
+      },
+      "navGroup": {
+        "comment": "Visual grouping: main nav items, then a gap, then utility items (Settings, Log out)",
+        "utilityItems": {
+          "marginTop": "auto",
+          "borderTop": "1px solid #F0F1F3",
+          "paddingTop": "12px"
+        }
+      },
+      "userProfile": {
+        "position": "bottom of sidebar, above utility items",
+        "padding": "12px 8px",
+        "avatar": {
+          "size": "32px",
+          "borderRadius": "9999px",
+          "border": "2px solid #E5E7EB"
+        },
+        "name": {
+          "fontSize": "13px",
+          "fontWeight": 600,
+          "color": "#111827"
+        },
+        "role": {
+          "fontSize": "11px",
+          "color": "#9CA3AF"
+        },
+        "verifiedBadge": {
+          "color": "#134116",
+          "size": "14px"
+        }
+      }
+    },
+
+    "topbar": {
+      "pageTitle": {
+        "fontSize": "18px",
+        "fontWeight": 700,
+        "color": "#111827"
+      },
+      "breadcrumb": {
+        "fontSize": "13px",
+        "color": "#9CA3AF",
+        "separator": "/",
+        "activeSegment": { "color": "#111827", "fontWeight": 500 }
+      },
+      "searchBar": {
+        "background": "#F4F6F8",
+        "border": "1px solid transparent",
+        "borderRadius": "8px",
+        "padding": "8px 12px",
+        "fontSize": "13px",
+        "color": "#111827",
+        "placeholder": "#9CA3AF",
+        "icon": { "color": "#9CA3AF", "size": "16px" },
+        "focus": {
+          "border": "1px solid #134116",
+          "background": "#FFFFFF",
+          "boxShadow": "0 0 0 3px rgba(19,65,22,0.15)"
+        }
+      },
+      "iconButton": {
+        "size": "36px",
+        "background": "transparent",
+        "borderRadius": "8px",
+        "border": "none",
+        "icon": { "color": "#6B7280", "size": "18px" },
+        "hover": { "background": "#F4F6F8", "icon": { "color": "#111827" } }
+      },
+      "notificationDot": {
+        "size": "8px",
+        "background": "#CA3E1E",
+        "border": "2px solid #FFFFFF",
+        "position": "top: -2px, right: -2px of icon button"
+      },
+      "userAvatarButton": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "8px",
+        "padding": "4px 8px",
+        "borderRadius": "8px",
+        "hover": { "background": "#F4F6F8" },
+        "avatar": { "size": "28px", "borderRadius": "9999px" },
+        "name": { "fontSize": "13px", "fontWeight": 500, "color": "#374151" },
+        "chevron": { "size": "14px", "color": "#9CA3AF" }
+      }
+    },
+
+    "statsCard": {
+      "comment": "KPI cards in dashboard top row — 4 across on desktop",
+      "container": {
+        "background": "#FFFFFF",
+        "border": "1px solid #F0F1F3",
+        "borderRadius": "12px",
+        "padding": "20px",
+        "shadow": "0 1px 3px rgba(0,0,0,0.07)",
+        "hover": {
+          "shadow": "0 4px 12px rgba(0,0,0,0.10)",
+          "transition": "box-shadow 150ms ease"
+        }
+      },
+      "label": {
+        "fontSize": "12px",
+        "fontWeight": 500,
+        "color": "#6B7280",
+        "marginBottom": "6px"
+      },
+      "value": {
+        "fontSize": "28px",
+        "fontWeight": 700,
+        "color": "#111827",
+        "lineHeight": "1.2"
+      },
+      "delta": {
+        "positive": {
+          "fontSize": "12px",
+          "fontWeight": 500,
+          "color": "#065F46",
+          "background": "#D1FAE5",
+          "borderRadius": "9999px",
+          "padding": "2px 6px"
+        },
+        "negative": {
+          "fontSize": "12px",
+          "fontWeight": 500,
+          "color": "#991B1B",
+          "background": "#FEE2E2",
+          "borderRadius": "9999px",
+          "padding": "2px 6px"
+        },
+        "neutral": {
+          "fontSize": "12px",
+          "fontWeight": 500,
+          "color": "#6B7280",
+          "background": "#F3F4F6",
+          "borderRadius": "9999px",
+          "padding": "2px 6px"
+        }
+      },
+      "DO_NOT": "Do not add icons inside stat cards unless in a separate icon container with its own background. DO NOT apply noteCard colors to stat cards."
+    },
+
+    "dataCard": {
+      "comment": "General content cards — wraps task lists, payment summaries, event panels, schedule panels",
+      "container": {
+        "background": "#FFFFFF",
+        "border": "1px solid #F0F1F3",
+        "borderRadius": "12px",
+        "padding": "20px 24px",
+        "shadow": "0 1px 3px rgba(0,0,0,0.07)"
+      },
+      "header": {
+        "display": "flex",
+        "justifyContent": "space-between",
+        "alignItems": "center",
+        "marginBottom": "16px",
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": 600,
+          "color": "#111827"
+        },
+        "subtitle": {
+          "fontSize": "12px",
+          "color": "#9CA3AF",
+          "marginTop": "2px"
+        },
+        "addButton": {
+          "comment": "EduWay + icon in card header — used for 'Add task', 'Add note'",
+          "size": "24px",
+          "background": "transparent",
+          "border": "none",
+          "icon": { "color": "#6B7280", "size": "18px" },
+          "hover": { "icon": { "color": "#111827" } }
+        },
+        "action": {
+          "fontSize": "13px",
+          "fontWeight": 500,
+          "color": "#134116",
+          "background": "transparent",
+          "border": "none",
+          "hover": { "textDecoration": "underline" }
+        },
+        "dropdownFilter": {
+          "comment": "EduWay-style date/filter dropdown in card header (e.g. 'May 14, Mon ▾')",
+          "fontSize": "13px",
+          "color": "#374151",
+          "fontWeight": 500,
+          "background": "transparent",
+          "border": "none",
+          "chevron": { "color": "#9CA3AF" }
+        }
+      }
+    },
+
+    "noteCard": {
+      "comment": "Colored highlight cards from EduWay — used for announcements, pinned notes, featured info. NO border, NO shadow — background color only.",
+      "common": {
+        "borderRadius": "12px",
+        "padding": "16px",
+        "border": "none",
+        "shadow": "none",
+        "header": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "flex-start",
+          "marginBottom": "8px"
+        },
+        "title": { "fontSize": "13px", "fontWeight": 600 },
+        "body": { "fontSize": "12px", "lineHeight": "1.6" },
+        "meta": { "fontSize": "11px", "marginTop": "12px" },
+        "menuIcon": {
+          "size": "14px",
+          "opacity": 0.5,
+          "hover": { "opacity": 1 }
+        }
+      },
+      "green": {
+        "background": "#BBFCCC",
+        "title": { "color": "#064E3B" },
+        "body": { "color": "#065F46" },
+        "meta": { "color": "#059669" },
+        "DO_NOT": "DO NOT use white text — use dark green text only for contrast"
+      },
+      "purple": {
+        "background": "#C4B5FD",
+        "title": { "color": "#3B0764" },
+        "body": { "color": "#4C1D95" },
+        "meta": { "color": "#6D28D9" }
+      },
+      "amber": {
+        "background": "#FDE68A",
+        "title": { "color": "#78350F" },
+        "body": { "color": "#92400E" },
+        "meta": { "color": "#B45309" }
+      },
+      "blue": {
+        "background": "#BFDBFE",
+        "title": { "color": "#1E3A8A" },
+        "body": { "color": "#1E40AF" },
+        "meta": { "color": "#2563EB" }
+      }
+    },
+
+    "taskListItem": {
+      "comment": "EduWay-style task row inside a task list card. NOT a standalone card — it's a list item inside a white dataCard.",
+      "container": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "4px",
+        "padding": "12px 0",
+        "borderBottom": "1px solid #F0F1F3",
+        "background": "transparent",
+        "lastChild": { "borderBottom": "none" }
+      },
+      "header": {
+        "display": "flex",
+        "justifyContent": "space-between",
+        "alignItems": "flex-start"
+      },
+      "title": {
+        "fontSize": "14px",
+        "fontWeight": 500,
+        "color": "#111827",
+        "lineHeight": "1.35"
+      },
+      "subtitle": {
+        "fontSize": "12px",
+        "color": "#9CA3AF",
+        "marginTop": "2px"
+      },
+      "meta": {
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "marginTop": "8px"
+      },
+      "date": {
+        "fontSize": "11px",
+        "color": "#9CA3AF"
+      },
+      "commentCount": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "4px",
+        "fontSize": "11px",
+        "color": "#9CA3AF",
+        "icon": { "size": "12px", "color": "#D1D5DB" }
+      },
+      "progressBar": {
+        "comment": "Inline progress bar for tasks in progress — shown below the task title",
+        "track": {
+          "background": "#E5E7EB",
+          "borderRadius": "9999px",
+          "height": "4px",
+          "marginTop": "8px"
+        },
+        "fill": {
+          "background": "#134116",
+          "borderRadius": "9999px",
+          "transition": "width 300ms ease"
+        },
+        "DO_NOT": "DO NOT show progress bar on 'To do' or 'Done' tasks — only on 'In progress'"
+      },
+      "statusPill": {
+        "comment": "Right-aligned status pill on task items",
+        "borderRadius": "9999px",
+        "padding": "2px 8px",
+        "fontSize": "11px",
+        "fontWeight": 500,
+        "inProgress": {
+          "background": "#FDE68A",
+          "color": "#78350F"
+        },
+        "todo": {
+          "background": "#DBEAFE",
+          "color": "#1E40AF"
+        },
+        "done": {
+          "background": "#D1FAE5",
+          "color": "#065F46"
+        },
+        "overdue": {
+          "background": "#FEE2E2",
+          "color": "#991B1B"
+        }
+      },
+      "hover": {
+        "background": "#F9FAFB",
+        "transition": "background 100ms ease"
+      },
+      "viewAllLink": {
+        "comment": "Bottom of task card — 'View all tasks' link",
+        "display": "block",
+        "textAlign": "center",
+        "paddingTop": "12px",
+        "fontSize": "13px",
+        "fontWeight": 500,
+        "color": "#134116",
+        "hover": { "textDecoration": "underline" }
+      }
+    },
+
+    "pillFilterTabs": {
+      "comment": "EduWay-style horizontal pill tab filters — used in task lists (All task / To do / In progress / Done) and member directory",
+      "container": {
+        "display": "flex",
+        "gap": "6px",
+        "marginBottom": "16px",
+        "overflowX": "auto",
+        "scrollbarWidth": "none",
+        "WebkitOverflowScrolling": "touch"
+      },
+      "pill": {
+        "default": {
+          "padding": "5px 14px",
+          "borderRadius": "9999px",
+          "fontSize": "13px",
+          "fontWeight": 500,
+          "color": "#6B7280",
+          "background": "transparent",
+          "border": "1px solid #E5E7EB",
+          "cursor": "pointer",
+          "transition": "all 150ms ease",
+          "whiteSpace": "nowrap"
+        },
+        "hover": {
+          "background": "#F4F6F8",
+          "borderColor": "#D1D5DB",
+          "color": "#374151"
+        },
+        "active": {
+          "background": "#091D0A",
+          "color": "#FFFFFF",
+          "borderColor": "#091D0A",
+          "fontWeight": 600,
+          "shadow": "none"
+        }
+      },
+      "DO_NOT": [
+        "DO NOT apply underline-style active indicator to pill tabs — use filled background",
+        "DO NOT stack pill tabs vertically",
+        "DO NOT make all pills the same width — let content determine width"
+      ]
+    },
+
+    "scheduleTable": {
+      "comment": "EduWay-style schedule/timetable inside a white dataCard — used for event schedule, exam timetable, meeting schedule",
+      "wrapper": {
+        "background": "transparent",
+        "border": "none",
+        "borderRadius": "0",
+        "overflow": "hidden",
+        "shadow": "none",
+        "comment": "Schedule table has NO outer wrapper card shadow — it's already inside a dataCard"
+      },
+      "header": {
+        "display": "grid",
+        "gridTemplateColumns": "80px 1fr 140px 120px",
+        "padding": "8px 0",
+        "borderBottom": "1px solid #F0F1F3",
+        "fontSize": "11px",
+        "fontWeight": 600,
+        "color": "#9CA3AF",
+        "textTransform": "uppercase",
+        "letterSpacing": "0.05em"
+      },
+      "row": {
+        "default": {
+          "display": "grid",
+          "gridTemplateColumns": "80px 1fr 140px 120px",
+          "padding": "11px 0",
+          "borderBottom": "1px solid #F0F1F3",
+          "background": "transparent",
+          "transition": "background 100ms ease"
+        },
+        "hover": { "background": "#F9FAFB" },
+        "lastRow": { "borderBottom": "none" }
+      },
+      "cells": {
+        "time": {
+          "fontSize": "13px",
+          "color": "#9CA3AF",
+          "fontWeight": 400
+        },
+        "subject": {
+          "fontSize": "14px",
+          "fontWeight": 500,
+          "color": "#111827"
+        },
+        "teacherCell": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "8px",
+          "avatar": {
+            "size": "24px",
+            "borderRadius": "9999px"
+          },
+          "name": {
+            "fontSize": "13px",
+            "color": "#6B7280"
+          }
+        },
+        "location": {
+          "fontSize": "13px",
+          "color": "#6B7280"
+        }
+      }
+    },
+
+    "table": {
+      "wrapper": {
+        "background": "#FFFFFF",
+        "border": "1px solid #F0F1F3",
+        "borderRadius": "12px",
+        "overflow": "hidden",
+        "shadow": "0 1px 3px rgba(0,0,0,0.07)"
+      },
+      "toolbar": {
+        "display": "flex",
+        "justifyContent": "space-between",
+        "alignItems": "center",
+        "padding": "14px 16px",
+        "borderBottom": "1px solid #F0F1F3",
+        "background": "#FFFFFF"
+      },
+      "header": {
+        "background": "#F9FAFB",
+        "borderBottom": "1px solid #E5E7EB",
+        "padding": "10px 16px",
+        "fontSize": "11px",
+        "fontWeight": 600,
+        "color": "#6B7280",
+        "textTransform": "uppercase",
+        "letterSpacing": "0.05em"
+      },
+      "row": {
+        "default": {
+          "background": "#FFFFFF",
+          "borderBottom": "1px solid #F0F1F3",
+          "padding": "12px 16px",
+          "transition": "background 100ms ease"
+        },
+        "hover": { "background": "#F9FAFB" },
+        "selected": {
+          "background": "#F0FDF4",
+          "borderLeft": "3px solid #134116"
+        },
+        "lastRow": { "borderBottom": "none" }
+      },
+      "cell": {
+        "primary": {
+          "fontSize": "14px",
+          "fontWeight": 500,
+          "color": "#111827"
+        },
+        "secondary": { "fontSize": "13px", "color": "#6B7280" },
+        "mono": {
+          "fontFamily": "'JetBrains Mono', monospace",
+          "fontSize": "13px",
+          "color": "#374151"
+        },
+        "muted": { "fontSize": "12px", "color": "#9CA3AF" }
+      },
+      "memberCell": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "10px",
+        "avatar": {
+          "size": "32px",
+          "borderRadius": "9999px"
+        },
+        "name": { "fontSize": "14px", "fontWeight": 500, "color": "#111827" },
+        "email": { "fontSize": "12px", "color": "#9CA3AF" }
+      },
+      "DO_NOT": [
+        "DO NOT add border-radius to individual rows — only to the outer wrapper",
+        "DO NOT add shadows to table rows",
+        "DO NOT use alternating row colors — hover state provides visual separation",
+        "DO NOT apply the table wrapper shadow to the schedule table inside a dataCard"
+      ]
+    },
+
+    "buttons": {
+      "primary": {
+        "default": {
+          "background": "#091D0A",
+          "color": "#FFFFFF",
+          "border": "none",
+          "borderRadius": "8px",
+          "padding": "9px 18px",
+          "fontSize": "14px",
+          "fontWeight": 600,
+          "shadow": "none",
+          "cursor": "pointer",
+          "transition": "background 150ms ease"
+        },
+        "hover": { "background": "#134116" },
+        "active": { "background": "#0a290b" },
+        "disabled": {
+          "background": "#D1D5DB",
+          "color": "#9CA3AF",
+          "cursor": "not-allowed"
+        },
+        "loading": {
+          "background": "#091D0A",
+          "opacity": 0.7,
+          "cursor": "wait"
+        }
+      },
+      "secondary": {
+        "default": {
+          "background": "#FFFFFF",
+          "color": "#374151",
+          "border": "1px solid #D1D5DB",
+          "borderRadius": "8px",
+          "padding": "9px 18px",
+          "fontSize": "14px",
+          "fontWeight": 500,
+          "shadow": "none"
+        },
+        "hover": {
+          "background": "#F9FAFB",
+          "borderColor": "#9CA3AF"
+        },
+        "disabled": {
+          "background": "#F9FAFB",
+          "color": "#D1D5DB",
+          "borderColor": "#E5E7EB"
+        }
+      },
+      "danger": {
+        "default": {
+          "background": "#CA3E1E",
+          "color": "#FFFFFF",
+          "border": "none",
+          "borderRadius": "8px",
+          "padding": "9px 18px",
+          "fontSize": "14px",
+          "fontWeight": 600
+        },
+        "hover": { "background": "#a83318" },
+        "active": { "background": "#8c2912" }
+      },
+      "ghost": {
+        "default": {
+          "background": "transparent",
+          "color": "#134116",
+          "border": "none",
+          "padding": "8px 12px",
+          "fontSize": "14px",
+          "fontWeight": 500,
+          "borderRadius": "8px"
+        },
+        "hover": { "background": "#F0FDF4" }
+      },
+      "iconButton": {
+        "default": {
+          "size": "36px",
+          "background": "transparent",
+          "border": "1px solid #E5E7EB",
+          "borderRadius": "8px",
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "center",
+          "icon": { "color": "#6B7280", "size": "16px" }
+        },
+        "hover": {
+          "background": "#F4F6F8",
+          "borderColor": "#D1D5DB"
+        }
+      },
+      "moreButton": {
+        "comment": "Three-dot / ellipsis menu button — used in EduWay card headers and task rows",
+        "size": "28px",
+        "background": "transparent",
+        "border": "none",
+        "borderRadius": "6px",
+        "icon": { "color": "#9CA3AF", "size": "16px" },
+        "hover": { "background": "#F4F6F8", "icon": { "color": "#6B7280" } }
+      },
+      "DO_NOT": [
+        "DO NOT add box-shadow to any button variant",
+        "DO NOT use gradient backgrounds on buttons — solid colors only",
+        "DO NOT apply rounded-full to rectangular action buttons"
+      ]
+    },
+
+    "badges": {
+      "comment": "Status pills, role badges, session labels. All use pill (border-radius: 9999px) EXCEPT sessionLabel which uses rectangular pill (6px).",
+      "common": {
+        "borderRadius": "9999px",
+        "padding": "2px 10px",
+        "fontSize": "12px",
+        "fontWeight": 500,
+        "display": "inline-flex",
+        "alignItems": "center",
+        "gap": "4px"
+      },
+      "pending": {
+        "background": "#FEF9C3",
+        "color": "#854D0E",
+        "border": "1px solid #FDE68A"
+      },
+      "active": {
+        "background": "#D1FAE5",
+        "color": "#065F46",
+        "border": "1px solid #6EE7B7"
+      },
+      "inactive": {
+        "background": "#F3F4F6",
+        "color": "#6B7280",
+        "border": "1px solid #E5E7EB"
+      },
+      "paid": {
+        "background": "#D1FAE5",
+        "color": "#065F46",
+        "border": "1px solid #6EE7B7"
+      },
+      "unpaid": {
+        "background": "#FEE2E2",
+        "color": "#991B1B",
+        "border": "1px solid #FCA5A5"
+      },
+      "partial": {
+        "background": "#FEF3C7",
+        "color": "#92400E",
+        "border": "1px solid #FCD34D"
+      },
+      "student": {
+        "background": "#DBEAFE",
+        "color": "#1E40AF",
+        "border": "1px solid #93C5FD"
+      },
+      "alumnus": {
+        "background": "#EDE9FE",
+        "color": "#5B21B6",
+        "border": "1px solid #C4B5FD"
+      },
+      "exco": {
+        "background": "#D1FAE5",
+        "color": "#065F46",
+        "border": "1px solid #6EE7B7"
+      },
+      "superAdmin": {
+        "background": "#FEE2E2",
+        "color": "#991B1B",
+        "border": "1px solid #FCA5A5"
+      },
+      "sessionLabel": {
+        "comment": "Session-scoped dues labels — '2024/2025 Session'. Rectangular pill, not full round.",
+        "background": "#F0FDF4",
+        "color": "#134116",
+        "border": "1px solid #BBF7D0",
+        "borderRadius": "6px",
+        "padding": "3px 8px",
+        "fontSize": "11px",
+        "fontWeight": 600,
+        "fontFamily": "'JetBrains Mono', monospace"
+      },
+      "DO_NOT": [
+        "DO NOT apply pill styles directly to raw text — always wrap in a span",
+        "DO NOT mix badge background with page background",
+        "DO NOT use full borderRadius (9999px) on sessionLabel — use 6px"
+      ]
+    },
+
+    "forms": {
+      "fieldGroup": { "marginBottom": "20px" },
+      "label": {
+        "fontSize": "13px",
+        "fontWeight": 500,
+        "color": "#374151",
+        "marginBottom": "6px",
+        "display": "block"
+      },
+      "input": {
+        "default": {
+          "background": "#FFFFFF",
+          "border": "1px solid #D1D5DB",
+          "borderRadius": "8px",
+          "padding": "9px 12px",
+          "fontSize": "14px",
+          "color": "#111827",
+          "placeholder": "#9CA3AF",
+          "shadow": "none",
+          "width": "100%",
+          "transition": "border-color 150ms ease, box-shadow 150ms ease"
+        },
+        "hover": { "borderColor": "#9CA3AF" },
+        "focus": {
+          "border": "1px solid #134116",
+          "boxShadow": "0 0 0 3px rgba(19,65,22,0.15)",
+          "outline": "none"
+        },
+        "error": {
+          "border": "1px solid #CA3E1E",
+          "boxShadow": "0 0 0 3px rgba(202,62,30,0.12)"
+        },
+        "disabled": {
+          "background": "#F9FAFB",
+          "borderColor": "#E5E7EB",
+          "color": "#9CA3AF",
+          "cursor": "not-allowed"
+        }
+      },
+      "select": {
+        "background": "#FFFFFF",
+        "border": "1px solid #D1D5DB",
+        "borderRadius": "8px",
+        "padding": "9px 12px",
+        "fontSize": "14px",
+        "color": "#111827",
+        "chevronIcon": { "color": "#6B7280" },
+        "focus": {
+          "border": "1px solid #134116",
+          "boxShadow": "0 0 0 3px rgba(19,65,22,0.15)"
+        }
+      },
+      "fileUpload": {
+        "comment": "Passport photo upload — dashed border drop zone",
+        "background": "#F9FAFB",
+        "border": "2px dashed #D1D5DB",
+        "borderRadius": "12px",
+        "padding": "32px 24px",
+        "textAlign": "center",
+        "cursor": "pointer",
+        "transition": "all 150ms ease",
+        "hover": {
+          "background": "#F0FDF4",
+          "borderColor": "#134116"
+        },
+        "dragOver": {
+          "background": "#F0FDF4",
+          "borderColor": "#134116",
+          "borderStyle": "solid"
+        },
+        "icon": { "color": "#9CA3AF", "size": "32px" },
+        "label": { "fontSize": "13px", "color": "#6B7280", "marginTop": "8px" },
+        "sublabel": { "fontSize": "11px", "color": "#9CA3AF" }
+      },
+      "errorMessage": {
+        "fontSize": "12px",
+        "color": "#CA3E1E",
+        "marginTop": "5px",
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "4px",
+        "icon": { "size": "12px" }
+      },
+      "helpText": {
+        "fontSize": "12px",
+        "color": "#9CA3AF",
+        "marginTop": "5px"
+      },
+      "sectionDivider": {
+        "comment": "Multi-section registration form separator",
+        "borderTop": "1px solid #F0F1F3",
+        "marginTop": "28px",
+        "paddingTop": "24px",
+        "title": {
+          "fontSize": "15px",
+          "fontWeight": 600,
+          "color": "#111827",
+          "marginBottom": "4px"
+        },
+        "description": {
+          "fontSize": "13px",
+          "color": "#6B7280",
+          "marginBottom": "20px"
+        }
+      },
+      "DO_NOT": [
+        "DO NOT apply card shadows to form inputs",
+        "DO NOT use brand green as the input background on focus — only as the border/ring color",
+        "DO NOT add border-radius larger than 8px to standard form inputs"
+      ]
+    },
+
+    "modal": {
+      "overlay": {
+        "background": "rgba(0, 0, 0, 0.4)",
+        "backdropFilter": "blur(2px)",
+        "position": "fixed inset-0",
+        "zIndex": 300
+      },
+      "container": {
+        "background": "#FFFFFF",
+        "borderRadius": "16px",
+        "padding": "0",
+        "shadow": "0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)",
+        "maxWidth": "560px",
+        "width": "calc(100% - 32px)",
+        "zIndex": 400
+      },
+      "header": {
+        "padding": "20px 24px 16px",
+        "borderBottom": "1px solid #F0F1F3",
+        "title": { "fontSize": "16px", "fontWeight": 600, "color": "#111827" },
+        "closeButton": {
+          "size": "28px",
+          "background": "#F4F6F8",
+          "borderRadius": "9999px",
+          "icon": { "color": "#6B7280", "size": "14px" },
+          "hover": { "background": "#E5E7EB" }
+        }
+      },
+      "body": { "padding": "20px 24px" },
+      "footer": {
+        "padding": "16px 24px 20px",
+        "borderTop": "1px solid #F0F1F3",
+        "display": "flex",
+        "justifyContent": "flex-end",
+        "gap": "10px"
+      }
+    },
+
+    "dropdown": {
+      "trigger": {
+        "background": "#FFFFFF",
+        "border": "1px solid #E5E7EB",
+        "borderRadius": "8px",
+        "padding": "7px 10px",
+        "fontSize": "13px",
+        "color": "#374151",
+        "chevron": { "color": "#9CA3AF" }
+      },
+      "menu": {
+        "background": "#FFFFFF",
+        "border": "1px solid #E5E7EB",
+        "borderRadius": "10px",
+        "shadow": "0 4px 16px rgba(0,0,0,0.10)",
+        "padding": "6px",
+        "minWidth": "160px",
+        "zIndex": 100
+      },
+      "item": {
+        "default": {
+          "padding": "8px 10px",
+          "borderRadius": "6px",
+          "fontSize": "13px",
+          "color": "#374151",
+          "background": "transparent",
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "8px"
+        },
+        "hover": { "background": "#F4F6F8", "color": "#111827" },
+        "active": {
+          "background": "#F0FDF4",
+          "color": "#134116",
+          "fontWeight": 500
+        },
+        "destructive": {
+          "default": { "color": "#CA3E1E" },
+          "hover": { "background": "#FEF2F2", "color": "#991B1B" }
+        }
+      },
+      "divider": {
+        "borderTop": "1px solid #F0F1F3",
+        "margin": "4px 0"
+      }
+    },
+
+    "tabs": {
+      "underlineVariant": {
+        "comment": "Standard underline tabs — used on detail pages, settings, notification filters",
+        "container": {
+          "borderBottom": "1px solid #E5E7EB",
+          "display": "flex",
+          "gap": "0"
+        },
+        "tab": {
+          "default": {
+            "padding": "10px 16px",
+            "fontSize": "14px",
+            "fontWeight": 500,
+            "color": "#6B7280",
+            "borderBottom": "2px solid transparent",
+            "background": "transparent",
+            "cursor": "pointer",
+            "transition": "all 150ms ease"
+          },
+          "hover": { "color": "#111827" },
+          "active": {
+            "color": "#091D0A",
+            "fontWeight": 600,
+            "borderBottom": "2px solid #091D0A"
+          }
+        }
+      },
+      "pillVariant": {
+        "comment": "Compact segment control — used in dashboard quick filters",
+        "container": {
+          "display": "flex",
+          "gap": "4px",
+          "background": "#F4F6F8",
+          "borderRadius": "10px",
+          "padding": "4px"
+        },
+        "tab": {
+          "default": {
+            "padding": "6px 14px",
+            "borderRadius": "8px",
+            "fontSize": "13px",
+            "fontWeight": 500,
+            "color": "#6B7280",
+            "background": "transparent"
+          },
+          "active": {
+            "background": "#FFFFFF",
+            "color": "#111827",
+            "fontWeight": 600,
+            "shadow": "0 1px 3px rgba(0,0,0,0.08)"
+          }
+        }
+      }
+    },
+
+    "toggle": {
+      "track": {
+        "width": "36px",
+        "height": "20px",
+        "borderRadius": "9999px",
+        "off": { "background": "#D1D5DB" },
+        "on": { "background": "#134116" },
+        "transition": "background 150ms ease"
+      },
+      "thumb": {
+        "size": "16px",
+        "background": "#FFFFFF",
+        "shadow": "0 1px 3px rgba(0,0,0,0.2)",
+        "borderRadius": "9999px",
+        "off": { "transform": "translateX(2px)" },
+        "on": { "transform": "translateX(18px)" },
+        "transition": "transform 150ms ease"
+      }
+    },
+
+    "progressBar": {
+      "comment": "Used in task items (in-progress tasks) and dues completion indicators",
+      "track": {
+        "background": "#E5E7EB",
+        "borderRadius": "9999px",
+        "height": "5px"
+      },
+      "fill": {
+        "background": "#134116",
+        "borderRadius": "9999px",
+        "transition": "width 300ms ease"
+      },
+      "variants": {
+        "success": { "fill": "#059669" },
+        "warning": { "fill": "#F59E0B" },
+        "danger": { "fill": "#CA3E1E" }
+      },
+      "inline": {
+        "comment": "Thin 4px progress bar used inside task list items",
+        "height": "4px",
+        "marginTop": "8px"
+      }
+    },
+
+    "avatar": {
+      "sizes": {
+        "xs": { "size": "20px", "fontSize": "9px" },
+        "sm": { "size": "24px", "fontSize": "10px" },
+        "md": { "size": "32px", "fontSize": "13px" },
+        "lg": { "size": "40px", "fontSize": "16px" },
+        "xl": { "size": "56px", "fontSize": "22px" }
+      },
+      "image": {
+        "borderRadius": "9999px",
+        "objectFit": "cover",
+        "width": "100%",
+        "height": "100%"
+      },
+      "fallback": {
+        "background": "#134116",
+        "color": "#FFFFFF",
+        "fontWeight": 600,
+        "borderRadius": "9999px",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "comment": "Initials from full name — first + last name initial, e.g. 'EO'"
+      }
+    },
+
+    "notification": {
+      "container": {
+        "background": "#FFFFFF",
+        "borderBottom": "1px solid #F0F1F3",
+        "padding": "14px 16px",
+        "display": "flex",
+        "gap": "12px",
+        "transition": "background 100ms ease"
+      },
+      "unread": {
+        "background": "#F0FDF4",
+        "borderLeft": "3px solid #134116",
+        "paddingLeft": "13px"
+      },
+      "iconContainer": {
+        "size": "36px",
+        "borderRadius": "9999px",
+        "flexShrink": 0,
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "variants": {
+          "payment": {
+            "background": "#D1FAE5",
+            "icon": { "color": "#065F46" }
+          },
+          "approval": {
+            "background": "#DBEAFE",
+            "icon": { "color": "#1E40AF" }
+          },
+          "event": { "background": "#EDE9FE", "icon": { "color": "#5B21B6" } },
+          "alert": { "background": "#FEE2E2", "icon": { "color": "#991B1B" } }
+        }
+      },
+      "title": { "fontSize": "13px", "fontWeight": 600, "color": "#111827" },
+      "body": { "fontSize": "12px", "color": "#6B7280", "lineHeight": "1.5" },
+      "time": { "fontSize": "11px", "color": "#9CA3AF" }
+    },
+
+    "settingsPanel": {
+      "layout": {
+        "sideNav": {
+          "width": "180px",
+          "background": "transparent",
+          "borderRight": "none"
+        },
+        "content": {
+          "background": "#FFFFFF",
+          "border": "1px solid #F0F1F3",
+          "borderRadius": "12px",
+          "padding": "24px",
+          "shadow": "0 1px 3px rgba(0,0,0,0.07)"
+        }
+      },
+      "sideNavItem": {
+        "default": {
+          "fontSize": "13px",
+          "color": "#6B7280",
+          "padding": "8px 10px",
+          "borderRadius": "6px",
+          "background": "transparent"
+        },
+        "active": {
+          "color": "#111827",
+          "fontWeight": 600,
+          "background": "#F0FDF4",
+          "borderLeft": "2px solid #134116",
+          "paddingLeft": "8px"
+        }
+      }
+    },
+
+    "emptyState": {
+      "comment": "Empty panels when no tasks, no members, no payments yet",
+      "container": {
+        "display": "flex",
+        "flexDirection": "column",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": "40px 24px",
+        "textAlign": "center"
+      },
+      "icon": {
+        "size": "40px",
+        "color": "#D1D5DB",
+        "marginBottom": "12px"
+      },
+      "title": {
+        "fontSize": "15px",
+        "fontWeight": 600,
+        "color": "#374151",
+        "marginBottom": "4px"
+      },
+      "description": {
+        "fontSize": "13px",
+        "color": "#9CA3AF",
+        "maxWidth": "280px"
+      },
+      "action": {
+        "marginTop": "16px",
+        "comment": "Optional CTA button — use primary button variant"
+      }
+    },
+
+    "toast": {
+      "container": {
+        "background": "#111827",
+        "color": "#FFFFFF",
+        "borderRadius": "10px",
+        "padding": "12px 16px",
+        "shadow": "0 4px 16px rgba(0,0,0,0.20)",
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "10px",
+        "fontSize": "13px",
+        "fontWeight": 500,
+        "maxWidth": "360px"
+      },
+      "variants": {
+        "success": {
+          "background": "#064E3B",
+          "icon": { "color": "#6EE7B7" }
+        },
+        "error": {
+          "background": "#7F1D1D",
+          "icon": { "color": "#FCA5A5" }
+        },
+        "info": {
+          "background": "#111827",
+          "icon": { "color": "#93C5FD" }
+        }
+      }
+    },
+
+    "chart": {
+      "lineChart": {
+        "stroke": "#134116",
+        "strokeWidth": "2px",
+        "areaFill": "rgba(19,65,22,0.08)",
+        "gridLines": { "stroke": "#F0F1F3" },
+        "tooltip": {
+          "background": "#111827",
+          "color": "#FFFFFF",
+          "borderRadius": "8px",
+          "padding": "8px 12px",
+          "fontSize": "12px",
+          "shadow": "0 4px 12px rgba(0,0,0,0.2)"
+        },
+        "axes": { "fontSize": "11px", "color": "#9CA3AF" },
+        "dataPoint": {
+          "size": "4px",
+          "fill": "#134116",
+          "strokeWidth": "2px",
+          "stroke": "#FFFFFF"
+        }
+      },
+      "barChart": {
+        "bar1": "#134116",
+        "bar2": "#BBF7D0",
+        "bar3": "#FCD34D",
+        "borderRadius": "4px 4px 0 0",
+        "gap": "4px"
+      },
+      "donutChart": {
+        "segments": ["#134116", "#FCD34D", "#C4B5FD", "#BBF7D0"],
+        "centerText": {
+          "fontSize": "20px",
+          "fontWeight": 700,
+          "color": "#111827"
+        },
+        "legendDot": { "size": "8px", "borderRadius": "9999px" }
+      }
+    }
+  },
+
+  "nfcsSpecific": {
+    "sessionDues": {
+      "comment": "Core NFCS feature — students pay dues per academic session. Session label format: '2024/2025 Session'",
+      "sessionCard": {
+        "container": {
+          "background": "#FFFFFF",
+          "border": "1px solid #F0F1F3",
+          "borderRadius": "12px",
+          "padding": "16px 20px",
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "hover": { "background": "#F9FAFB" }
+        },
+        "sessionLabel": {
+          "fontSize": "13px",
+          "fontWeight": 600,
+          "color": "#111827",
+          "fontFamily": "'JetBrains Mono', monospace"
+        },
+        "sessionBadge": {
+          "current": {
+            "background": "#F0FDF4",
+            "color": "#134116",
+            "border": "1px solid #BBF7D0",
+            "borderRadius": "6px",
+            "padding": "2px 8px",
+            "fontSize": "11px",
+            "fontWeight": 600,
+            "label": "Current"
+          },
+          "past": {
+            "background": "#F3F4F6",
+            "color": "#6B7280",
+            "border": "1px solid #E5E7EB",
+            "borderRadius": "6px",
+            "padding": "2px 8px",
+            "fontSize": "11px",
+            "label": "Past"
+          }
+        },
+        "amount": {
+          "fontSize": "15px",
+          "fontWeight": 700,
+          "color": "#111827",
+          "fontFamily": "'JetBrains Mono', monospace"
+        },
+        "paymentStatus": {
+          "paid": {
+            "icon": "CheckCircle",
+            "iconColor": "#059669",
+            "text": "Paid",
+            "textColor": "#065F46",
+            "fontSize": "13px",
+            "fontWeight": 500
+          },
+          "unpaid": {
+            "icon": "XCircle",
+            "iconColor": "#CA3E1E",
+            "text": "Outstanding",
+            "textColor": "#991B1B"
+          },
+          "partial": {
+            "icon": "Clock",
+            "iconColor": "#D97706",
+            "text": "Partially paid",
+            "textColor": "#92400E"
+          }
+        }
+      }
+    },
+    "memberDirectory": {
+      "filters": {
+        "organ": "dropdown — 5 NFCS organs as options",
+        "society": "dropdown",
+        "faculty": "dropdown",
+        "level": "dropdown (100–500 + PG)",
+        "status": "pill filter tabs — All / Active / Pending / Alumni",
+        "duesStatus": "pill filter tabs — All / Paid / Unpaid"
+      }
+    },
+    "registrationStatus": {
+      "flow": ["pending", "approved", "active", "alumni"],
+      "pending": {
+        "badge": "pendingBadge",
+        "description": "Submitted, awaiting exco/admin review"
+      },
+      "active": {
+        "badge": "activeBadge",
+        "description": "Approved and active member"
+      },
+      "alumni": {
+        "badge": "alumnus badge",
+        "description": "Role upgraded from student by exco/admin"
+      }
+    },
+    "onSiteRegistration": {
+      "comment": "Exco-initiated registration flow — same form, submitted directly as active",
+      "indicator": {
+        "banner": {
+          "background": "#F0FDF4",
+          "border": "1px solid #BBF7D0",
+          "borderRadius": "8px",
+          "padding": "10px 14px",
+          "fontSize": "13px",
+          "color": "#065F46",
+          "icon": { "color": "#134116" },
+          "text": "Onsite registration — member will be activated immediately"
+        }
+      }
+    }
+  },
+
+  "pageTemplates": {
+    "dashboard": {
+      "structure": "topbar → statsRow(4 col) → mainContentRow(task panel + right panel) → recentTable",
+      "rightPanel": "notes cards grid (2 col) + schedule table",
+      "spacing": "24px gap between all sections",
+      "background": "#F4F6F8"
+    },
+    "listPage": {
+      "structure": "pageHeader(title + primary CTA) → filterRow(pillTabs + search + dropdown filters) → dataTable",
+      "spacing": "20px gap"
+    },
+    "detailPage": {
+      "structure": "breadcrumb → profileHeaderCard → underlineTabs → tabbed content cards",
+      "spacing": "20px gap"
+    },
+    "formPage": {
+      "structure": "pageHeader → formCard(sectioned with dividers) → stickyFooter(cancel + submit)",
+      "formCard": {
+        "maxWidth": "720px",
+        "margin": "0 auto",
+        "background": "#FFFFFF",
+        "border": "1px solid #F0F1F3",
+        "borderRadius": "12px",
+        "padding": "28px 32px",
+        "shadow": "0 1px 3px rgba(0,0,0,0.07)"
+      }
+    },
+    "settingsPage": {
+      "structure": "pageHeader → twoColumn(settingsNav 200px + settingsContent card)",
+      "leftWidth": "200px"
+    },
+    "paymentPage": {
+      "structure": "pageHeader → sessionDuesGrid → paymentHistoryTable",
+      "sessionDuesGrid": {
+        "columns": "repeat(auto-fill, minmax(300px, 1fr))",
+        "gap": "16px"
+      }
+    }
+  },
+
+  "tailwindCustomConfig": {
+    "comment": "Add these to tailwind.config.js extend block for consistent token usage",
+    "colors": {
+      "brand": {
+        "DEFAULT": "#091D0A",
+        "accent": "#134116",
+        "light": "#F0FDF4",
+        "border": "#BBF7D0"
+      },
+      "danger": "#CA3E1E",
+      "surface": {
+        "DEFAULT": "#FFFFFF",
+        "subtle": "#F9FAFB",
+        "page": "#F4F6F8",
+        "mint": "#EAEDE8"
+      }
+    },
+    "fontFamily": {
+      "sans": ["Inter", "DM Sans", "system-ui", "sans-serif"],
+      "mono": ["JetBrains Mono", "Fira Code", "monospace"]
+    },
+    "borderRadius": {
+      "card": "12px",
+      "modal": "16px",
+      "badge": "9999px",
+      "session": "6px"
+    }
+  }
+}
