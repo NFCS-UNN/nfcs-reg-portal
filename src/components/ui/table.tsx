@@ -8,7 +8,7 @@ const TableWrapper = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "w-full overflow-hidden border border-neutrals-borderLight bg-white rounded-[12px] shadow-card",
+      "w-full overflow-hidden border border-neutrals-borderLight bg-surface rounded-[12px] shadow-card",
       className
     )}
     {...props}
@@ -61,7 +61,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-neutrals-borderLight bg-white transition-colors duration-100 hover:bg-surface-subtle",
+      "border-b border-neutrals-borderLight bg-surface transition-colors duration-100 hover:bg-surface-subtle",
       selected && "bg-brand-light border-l-[3px] border-l-brand-accent pl-[13px]",
       className
     )}

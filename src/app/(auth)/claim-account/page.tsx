@@ -23,7 +23,7 @@ function ClaimAccountContent() {
   const [isLoadingRecord, setIsLoadingRecord] = React.useState(true);
   const [legacyMember, setLegacyMember] = React.useState<any>(null);
   const [recordError, setRecordError] = React.useState<string | null>(null);
-  
+
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -118,8 +118,8 @@ function ClaimAccountContent() {
       <div className="w-full max-w-[420px] flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col items-center text-center gap-2">
-          <div className="h-12 w-12 rounded-[10px] bg-brand flex items-center justify-center text-white font-bold text-xl select-none">
-            N
+          <div className="h-12 w-12 rounded-[10px] overflow-hidden select-none">
+            <img src="/nfcs-unn-logo.png" alt="NFCS UNN Logo" className="h-full w-full object-cover" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-bold tracking-tight text-text-primary">

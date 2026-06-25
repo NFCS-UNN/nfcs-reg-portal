@@ -264,7 +264,7 @@ CREATE TRIGGER legacy_members_updated_at
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, full_name, role, status)
+  INSERT INTO public.profiles (id, email, full_name, role, status)
   VALUES (
     NEW.id,
     NEW.email,
@@ -274,7 +274,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

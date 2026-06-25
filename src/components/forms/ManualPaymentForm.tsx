@@ -14,6 +14,17 @@ import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils/cn";
 
+// Year fee breakdown (matching the fee engine)
+const DUES_YEARS: { label: string; value: string; total: number; breakdown: string; type: "membership_levy" | "annual_dues" | "special_levy" | "other" }[] = [
+  { label: "1st Year (Membership Levy)", value: "year_1", total: 500, breakdown: "₦250 dues + ₦150 const + ₦100 CGAN", type: "membership_levy" },
+  { label: "2nd Year", value: "year_2", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
+  { label: "3rd Year", value: "year_3", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
+  { label: "4th Year (Non-finalist)", value: "year_4", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
+  { label: "4th Year (Finalist)", value: "year_4f", total: 500, breakdown: "₦250 dues + ₦50 const + ₦200 CGAN", type: "annual_dues" },
+  { label: "5th Year", value: "year_5", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
+  { label: "6th Year (Finalist)", value: "year_6", total: 300, breakdown: "₦250 dues + ₦50 const + ₦0 CGAN", type: "annual_dues" },
+];
+
 export function ManualPaymentForm() {
   const { toast } = useToast();
   const { profile: currentExco } = useUser();
@@ -26,6 +37,10 @@ export function ManualPaymentForm() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedMember, setSelectedMember] = React.useState<any | null>(null);
   const [showMemberDropdown, setShowMemberDropdown] = React.useState(false);
+
+  // Dues year selection
+  const [selectedDuesYear, setSelectedDuesYear] = React.useState("");
+  const selectedDuesInfo = DUES_YEARS.find((d) => d.value === selectedDuesYear);
 
   const {
     register,
@@ -106,6 +121,15 @@ export function ManualPaymentForm() {
     setShowMemberDropdown(false);
   };
 
+  const handleDuesYearChange = (yearVal: string) => {
+    setSelectedDuesYear(yearVal);
+    const info = DUES_YEARS.find((d) => d.value === yearVal);
+    if (info) {
+      setValue("amount", String(info.total));
+      setValue("dues_type", info.type);
+    }
+  };
+
   const onSubmit = async (values: ManualPaymentFormValues) => {
     if (!currentExco) return;
     setIsLoading(true);
@@ -124,6 +148,7 @@ export function ManualPaymentForm() {
         setSuccess(true);
         reset();
         setSelectedMember(null);
+        setSelectedDuesYear("");
         toast({
           title: "Payment Recorded",
           description: "Dues receipt has been logged successfully.",
@@ -146,6 +171,11 @@ export function ManualPaymentForm() {
             <h3 className="text-xs font-bold">Manual Payment Logged</h3>
             <p className="text-[11px] leading-relaxed opacity-95">
               The dues record has been saved. The member&apos;s dashboard and directory statement will automatically reflect this payment.
+              {currentExco && (
+                <span className="block mt-1 font-semibold text-[10px] opacity-90">
+                  Recorded by: {currentExco.full_name} ({currentExco.role === "super_admin" ? "Super Admin" : "Exco"})
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -232,6 +262,36 @@ export function ManualPaymentForm() {
 
         {/* Dues Details */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Year select — auto-fills amount */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-text-secondary">Year Paid For</label>
+            <select
+              value={selectedDuesYear}
+              onChange={(e) => handleDuesYearChange(e.target.value)}
+              className="h-10 w-full rounded-lg border border-gray-200 bg-white dark:bg-prussian-blue-2 px-3 py-1.5 text-[13px] text-text-primary focus:border-brand-accent focus:outline-none"
+            >
+              <option value="">Select academic year...</option>
+              {DUES_YEARS.map((y) => (
+                <option key={y.value} value={y.value}>
+                  {y.label} — ₦{y.total}
+                </option>
+              ))}
+            </select>
+            {selectedDuesInfo && (
+              <p className="text-[11px] text-text-tertiary mt-1">
+                {selectedDuesInfo.breakdown} = <span className="font-bold text-text-primary">₦{selectedDuesInfo.total}</span>
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-text-secondary">Amount (₦) <span className="text-text-tertiary font-normal">— auto-filled</span></label>
+            <Input error={!!errors.amount} {...register("amount")} placeholder="auto-filled from year selection" />
+            {errors.amount && <p className="text-[11px] text-danger mt-1">{errors.amount.message}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-text-secondary">Dues Levy Type</label>
             <Select error={!!errors.dues_type} {...register("dues_type")}>
@@ -243,14 +303,6 @@ export function ManualPaymentForm() {
             {errors.dues_type && <p className="text-[11px] text-danger mt-1">{errors.dues_type.message}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-text-secondary">Amount (₦)</label>
-            <Input error={!!errors.amount} {...register("amount")} placeholder="5000" />
-            {errors.amount && <p className="text-[11px] text-danger mt-1">{errors.amount.message}</p>}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-text-secondary">Session / Period</label>
             <Input error={!!errors.payment_period} {...register("payment_period")} placeholder="2024/2025 Session" />

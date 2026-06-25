@@ -108,11 +108,11 @@ export function Sidebar() {
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[220px] flex-col border-r border-neutrals-border bg-white p-[16px_12px] md:flex">
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[220px] flex-col border-r border-neutrals-border bg-surface p-[16px_12px] md:flex">
       {/* Brand Header */}
       <div className="flex items-center gap-2.5 border-b border-neutrals-borderLight pb-5 mb-4 px-2">
-        <div className="h-8 w-8 rounded-[8px] bg-brand flex items-center justify-center text-white font-bold text-base select-none">
-          N
+        <div className="h-8 w-8 rounded-[8px] overflow-hidden select-none">
+          <img src="/nfcs-unn-logo.png" alt="NFCS UNN Logo" className="h-full w-full object-cover" />
         </div>
         <div className="flex flex-col">
           <span className="text-[14px] font-semibold text-text-primary leading-tight">

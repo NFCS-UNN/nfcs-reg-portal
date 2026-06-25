@@ -12,7 +12,10 @@ export function useUser() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const supabase = createClient();
+  // Stable Supabase client — created once, never recreated on re-render.
+  // Prevents duplicate channel subscriptions in React StrictMode.
+  const supabaseRef = React.useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const fetchUserData = React.useCallback(async () => {
     setIsLoading(true);
@@ -56,13 +59,13 @@ export function useUser() {
     }
   }, [supabase]);
 
+  // Initial fetch + auth state listener
   React.useEffect(() => {
     fetchUserData();
 
-    // Subscribe to auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === "SIGNED_IN") {
         fetchUserData();
       } else if (event === "SIGNED_OUT") {
@@ -76,6 +79,40 @@ export function useUser() {
       subscription.unsubscribe();
     };
   }, [supabase, fetchUserData]);
+
+  // Realtime subscription — updates profile state whenever the DB row changes.
+  // Guards against StrictMode double-mount by removing the channel before re-subscribing.
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    const channelName = `realtime-profile-${user.id}`;
+
+    // Tear down any stale channel with the same name (StrictMode safe)
+    const stale = supabase.getChannels().find((ch) => ch.topic === `realtime:${channelName}`);
+    if (stale) supabase.removeChannel(stale);
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setProfile(payload.new as Profile);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, user?.id]);
 
   return {
     user,

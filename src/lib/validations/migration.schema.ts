@@ -14,7 +14,7 @@ export const migrationSchema = z.object({
   organ: z.enum(ORGANS).optional().or(z.literal("")),
   society: z.string().optional().or(z.literal("")),
   parish: z.string().optional().or(z.literal("")),
-  migration_source: z.enum(MIGRATION_SOURCES, { required_error: "Source is required" }),
+  migration_source: z.enum(MIGRATION_SOURCES, { message: "Source is required" }),
   notes: z.string().optional().or(z.literal("")),
   dues_amount_paid: z.string().optional().or(z.literal("")),
   dues_period: z.string().optional().or(z.literal("")),

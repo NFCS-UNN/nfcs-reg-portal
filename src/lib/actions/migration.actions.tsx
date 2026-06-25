@@ -342,3 +342,150 @@ export async function claimLegacyAccount(token: string, email: string, password:
   }
 }
 
+export async function revokeLegacyInvite(id: string, excoId: string) {
+  try {
+    const { data: legacy, error: getError } = await adminClient
+      .from("legacy_members")
+      .select("full_name")
+      .eq("id", id)
+      .single();
+
+    if (getError || !legacy) {
+      return { error: "Legacy member not found" };
+    }
+
+    const { error } = await adminClient
+      .from("legacy_members")
+      .update({
+        claim_status: "unclaimed",
+        claim_token: null,
+        claim_token_expires: null,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await adminClient.from("audit_log").insert({
+      actor_id: excoId,
+      action: "revoke_legacy_invite",
+      target_type: "legacy_member",
+      target_id: id,
+      metadata: { name: legacy.full_name },
+    });
+
+    revalidatePath("/admin/members");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to revoke invite" };
+  }
+}
+
+export async function deleteLegacyMember(id: string, excoId: string) {
+  try {
+    // Verify the caller is a super_admin
+    const { data: callerProfile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", excoId)
+      .single();
+
+    if (!callerProfile || callerProfile.role !== "super_admin") {
+      return { error: "Unauthorized. Only Super Admins can delete legacy member records." };
+    }
+
+    const { data: legacy, error: getError } = await adminClient
+      .from("legacy_members")
+      .select("full_name, claim_status")
+      .eq("id", id)
+      .single();
+
+    if (getError || !legacy) {
+      return { error: "Legacy member not found" };
+    }
+
+    if (legacy.claim_status === "claimed") {
+      return { error: "Cannot delete a legacy member whose account is already claimed." };
+    }
+
+    // Delete associated payments first to avoid FK constraint errors
+    await adminClient.from("payments").delete().eq("legacy_member_id", id);
+
+    // Delete the legacy member
+    const { error } = await adminClient
+      .from("legacy_members")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await adminClient.from("audit_log").insert({
+      actor_id: excoId,
+      action: "delete_legacy_member",
+      target_type: "legacy_member",
+      target_id: id,
+      metadata: { name: legacy.full_name },
+    });
+
+    revalidatePath("/admin/members");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to delete legacy member" };
+  }
+}
+
+export async function updateLegacyMember(id: string, values: Partial<MigrationFormValues>, excoId: string) {
+  try {
+    const { data: legacy, error: getError } = await adminClient
+      .from("legacy_members")
+      .select("full_name, claim_status")
+      .eq("id", id)
+      .single();
+
+    if (getError || !legacy) {
+      return { error: "Legacy member not found" };
+    }
+
+    if (legacy.claim_status === "claimed") {
+      return { error: "Cannot edit a legacy member whose account is already claimed." };
+    }
+
+    const { error } = await adminClient
+      .from("legacy_members")
+      .update({
+        full_name: values.full_name,
+        email: values.email || null,
+        phone: values.phone || null,
+        matric_number: values.matric_number || null,
+        faculty: values.faculty || null,
+        department: values.department || null,
+        academic_level: values.academic_level || null,
+        organ: (values.organ as any) || null,
+        society: values.society || null,
+        parish: values.parish || null,
+        notes: values.notes || null,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await adminClient.from("audit_log").insert({
+      actor_id: excoId,
+      action: "update_legacy_member",
+      target_type: "legacy_member",
+      target_id: id,
+      metadata: { name: values.full_name },
+    });
+
+    revalidatePath("/admin/members");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to update legacy member" };
+  }
+}
+

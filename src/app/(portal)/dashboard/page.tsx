@@ -13,9 +13,14 @@ import {
   Megaphone,
   Sparkles,
   FolderSync,
-  User
+  User,
+  Activity,
+  ShieldAlert,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
+import { AdminAnalytics } from "@/components/dashboard/AdminAnalytics";
+import { DismissibleGreeting } from "@/components/dashboard/DismissibleGreeting";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -48,23 +53,100 @@ export default async function DashboardPage() {
   }
 
   const role = profile.role;
+  const isSuperAdmin = role === "super_admin";
   const isExcoOrAbove = ["exco", "super_admin"].includes(role);
 
-  // Mock stats or data load depending on role
-  // Let's create beautiful mock KPI states to populate stats cards
+  // Fetch real counts/stats from Supabase
+  const { count: eventsCount } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true });
+
+  const { count: announcementsCount } = await supabase
+    .from("announcements")
+    .select("*", { count: "exact", head: true });
+
+  const { count: totalMembers } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true });
+
+  const { count: activeMembers } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "active");
+
+  const { count: pendingApprovals } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
+
+  // Additional admin stats
+  const { count: legacyCount } = await supabase
+    .from("legacy_members")
+    .select("*", { count: "exact", head: true })
+    .eq("claim_status", "unclaimed");
+
+  // Payments stats for super-admin
+  const { data: allPayments } = isSuperAdmin ? await supabase
+    .from("payments")
+    .select("amount, status, channel, created_at")
+    .order("created_at", { ascending: false }) : { data: null };
+
+  let totalCollected = 0;
+  let onlineCollected = 0;
+  let manualCollected = 0;
+  let pendingCount = 0;
+
+  if (allPayments) {
+    allPayments.forEach((p) => {
+      const amount = parseFloat(p.amount.toString());
+      if (p.status === "confirmed") {
+        totalCollected += amount;
+        if (p.channel === "online") onlineCollected += amount;
+        else if (p.channel === "manual") manualCollected += amount;
+      } else if (p.status === "pending") {
+        pendingCount++;
+      }
+    });
+  }
+
+  // Fetch announcements for dashboard (up to 3)
+  const { data: announcements } = await supabase
+    .from("announcements")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  // Fetch events for dashboard (up to 3)
+  let eventsQuery = supabase.from("events").select("*");
+  if (!isExcoOrAbove) {
+    eventsQuery = eventsQuery.eq("is_published", true);
+  }
+  const { data: dbEvents } = await eventsQuery
+    .order("starts_at", { ascending: true })
+    .limit(3);
+
+  // For super-admin charts: fetch profile created_at for growth chart
+  const { data: profileDates } = isSuperAdmin ? await supabase
+    .from("profiles")
+    .select("created_at") : { data: null };
+
   const memberStats = {
     totalPaid: "₦15,000",
     outstanding: "₦5,000",
     session: "2024/2025",
-    eventsCount: 3,
-    announcementsCount: 2,
+    eventsCount: eventsCount || 0,
+    announcementsCount: announcementsCount || 0,
   };
 
   const adminStats = {
-    totalMembers: 342,
-    activeMembers: 310,
-    pendingApprovals: 12,
-    duesCollected: "₦1,540,000",
+    totalMembers: totalMembers || 0,
+    activeMembers: activeMembers || 0,
+    pendingApprovals: pendingApprovals || 0,
+    legacyCount: legacyCount || 0,
+    totalCollected,
+    onlineCollected,
+    manualCollected,
+    pendingCount,
   };
 
   return (
@@ -82,27 +164,38 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Greeting Banner */}
-      <div className="flex flex-col gap-1.5 bg-brand text-white p-6 md:p-8 rounded-[12px] shadow-card relative overflow-hidden select-none">
-        <div className="absolute right-0 bottom-0 top-0 w-1/3 opacity-15 pointer-events-none flex items-center justify-center">
-          <Sparkles className="h-32 w-32 text-white" />
+      {/* Profile Completion Warning Banner */}
+      {!isExcoOrAbove && (!profile.phone || !profile.faculty || !profile.department || !profile.academic_level || !profile.organ) && (
+        <div className="flex flex-col sm:flex-row gap-4 p-5 rounded-[12px] bg-status-warningBackground border border-status-warningBorder text-status-warningText animate-in fade-in duration-300 items-start sm:items-center justify-between">
+          <div className="flex gap-4 items-start">
+            <AlertCircle className="h-5 w-5 shrink-0 text-status-warningText mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold">Complete Your Profile Setup</h3>
+              <p className="text-xs leading-relaxed opacity-95">
+                Some details (Phone, Faculty, Department, Academic Level, or Scope Organ) are missing from your profile. Please complete them to ensure full chapter directory access.
+              </p>
+            </div>
+          </div>
+          <Button size="sm" asChild className="shrink-0 text-xs h-8 bg-white hover:bg-amber-50 text-status-warningText border border-status-warningBorder transition-colors">
+            <Link href="/profile">Go to Profile</Link>
+          </Button>
         </div>
-        <div className="z-10 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold tracking-widest uppercase opacity-75">
-            Overview
-          </span>
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight">
-            Peace be with you, {profile.full_name.split(" ")[0]}!
-          </h2>
-          <p className="text-xs md:text-sm text-brand-light opacity-90 max-w-md">
-            Welcome to the NFCS UNN Portal. Access your dues history, check calendar events, and view announcements.
-          </p>
-        </div>
-      </div>
+      )}
 
-      {/* KPI Stats Row */}
-      {isExcoOrAbove ? (
-        // Exco/Super Admin KPIs
+      {/* Greeting Banner — hidden for super-admin, dismissible for others */}
+      {!isSuperAdmin && (
+        <DismissibleGreeting name={profile.full_name} />
+      )}
+
+      {/* Super Admin: Analytics Dashboard */}
+      {isSuperAdmin ? (
+        <AdminAnalytics
+          adminStats={adminStats}
+          profileDates={(profileDates || []).map((p) => p.created_at)}
+          allPayments={(allPayments || []).map((p) => ({ ...p, created_at: p.created_at ?? "" }))}
+        />
+      ) : isExcoOrAbove ? (
+        // Exco KPIs
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <Card hoverable>
             <CardContent className="p-5 flex items-center gap-4 justify-between">
@@ -149,7 +242,7 @@ export default async function DashboardPage() {
             <CardContent className="p-5 flex items-center gap-4 justify-between">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-text-secondary">Dues Collected</span>
-                <h3 className="text-2xl font-bold text-text-primary">{adminStats.duesCollected}</h3>
+                <h3 className="text-2xl font-bold text-text-primary">₦{adminStats.totalCollected.toLocaleString()}</h3>
               </div>
               <div className="h-10 w-10 rounded-lg bg-brand-light flex items-center justify-center text-brand-accent">
                 <TrendingUp className="h-5 w-5" />
@@ -242,6 +335,14 @@ export default async function DashboardPage() {
                         Migrate Members
                       </Link>
                     </Button>
+                    {isSuperAdmin && (
+                      <Button variant="secondary" asChild className="justify-start gap-2 h-11 text-xs">
+                        <Link href="/admin/settings">
+                          <ShieldAlert className="h-4 w-4 text-brand" />
+                          System Settings
+                        </Link>
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -281,27 +382,61 @@ export default async function DashboardPage() {
               </Button>
             </CardHeader>
             <CardContent className="p-6 pt-0 space-y-4">
-              {/* Mock Announcement 1 */}
-              <div className="flex flex-col gap-1 p-4 rounded-[12px] bg-noteCards-green hover:bg-noteCards-greenSurface transition-colors">
-                <div className="flex justify-between items-start gap-2 text-noteCards-greenText">
-                  <h4 className="text-[13px] font-bold">General Meeting & Dues Audit</h4>
-                  <span className="text-[10px] uppercase font-semibold text-noteCards-greenMeta">June 20, 2026</span>
-                </div>
-                <p className="text-[12px] text-noteCards-greenSubtext leading-relaxed mt-1">
-                  We are having our monthly general assembly this Sunday at St. Peter&apos;s Chaplaincy. All members are requested to update their dues records before then.
-                </p>
-              </div>
+              {!announcements || announcements.length === 0 ? (
+                <p className="text-xs text-text-secondary py-4 text-center">No recent announcements posted.</p>
+              ) : (
+                announcements.map((ann, idx) => {
+                  const cardColorStyles = [
+                    {
+                      bg: "bg-noteCards-green hover:bg-noteCards-greenSurface",
+                      title: "text-noteCards-greenText",
+                      body: "text-noteCards-greenSubtext",
+                      meta: "text-noteCards-greenMeta",
+                    },
+                    {
+                      bg: "bg-noteCards-purple hover:bg-noteCards-purpleSurface",
+                      title: "text-noteCards-purpleText",
+                      body: "text-noteCards-purpleSubtext",
+                      meta: "text-noteCards-purpleMeta",
+                    },
+                    {
+                      bg: "bg-noteCards-amber hover:bg-noteCards-amberSurface",
+                      title: "text-noteCards-amberText",
+                      body: "text-noteCards-amberSubtext",
+                      meta: "text-noteCards-amberMeta",
+                    },
+                    {
+                      bg: "bg-noteCards-blue hover:bg-[#EFF6FF]",
+                      title: "text-noteCards-blueText",
+                      body: "text-noteCards-blueText",
+                      meta: "text-[#2563EB]",
+                    },
+                  ];
+                  const style = cardColorStyles[idx % cardColorStyles.length];
+                  const dateStr = new Date(ann.created_at || "").toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  });
 
-              {/* Mock Announcement 2 */}
-              <div className="flex flex-col gap-1 p-4 rounded-[12px] bg-noteCards-purple hover:bg-noteCards-purpleSurface transition-colors">
-                <div className="flex justify-between items-start gap-2 text-noteCards-purpleText">
-                  <h4 className="text-[13px] font-bold">Gospel Band Auditions</h4>
-                  <span className="text-[10px] uppercase font-semibold text-noteCards-purpleMeta">June 18, 2026</span>
-                </div>
-                <p className="text-[12px] text-noteCards-purpleSubtext leading-relaxed mt-1">
-                  If you have talent in musical instruments or vocals, join the Gospel Band organ. Auditions are scheduled for Saturday afternoon.
-                </p>
-              </div>
+                  return (
+                    <div
+                      key={ann.id}
+                      className={`flex flex-col gap-1 p-4 rounded-[12px] transition-colors ${style.bg}`}
+                    >
+                      <div className={`flex justify-between items-start gap-2 ${style.title}`}>
+                        <h4 className="text-[13px] font-bold">{ann.title}</h4>
+                        <span className={`text-[10px] uppercase font-semibold shrink-0 ${style.meta}`}>
+                          {dateStr}
+                        </span>
+                      </div>
+                      <p className={`text-[12px] leading-relaxed mt-1 line-clamp-3 ${style.body}`}>
+                        {ann.body}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
         </div>
@@ -313,7 +448,7 @@ export default async function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="space-y-1">
                 <CardTitle>Events</CardTitle>
-                <CardDescription>Timetable & meetings</CardDescription>
+                <CardDescription>Timetable &amp; meetings</CardDescription>
               </div>
               <Button variant="ghost" size="sm" asChild className="text-xs">
                 <Link href="/events">All</Link>
@@ -321,27 +456,29 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="p-6 pt-0 space-y-4">
               <div className="flex flex-col gap-3">
-                <div className="flex gap-3 items-center border-b border-neutrals-borderLight pb-3 last:border-0 last:pb-0">
-                  <div className="h-10 w-10 shrink-0 bg-brand-light text-brand rounded-[8px] flex flex-col items-center justify-center font-bold">
-                    <span className="text-[10px] leading-none uppercase">Jun</span>
-                    <span className="text-sm leading-none mt-0.5">25</span>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-text-primary truncate">Mass & Adoration</span>
-                    <span className="text-[11px] text-text-tertiary">Chaplaincy Chapel &bull; 4:00 PM</span>
-                  </div>
-                </div>
+                {!dbEvents || dbEvents.length === 0 ? (
+                  <p className="text-xs text-text-secondary py-4 text-center">No upcoming events scheduled.</p>
+                ) : (
+                  dbEvents.map((evt) => {
+                    const evtDate = new Date(evt.starts_at);
+                    const monthStr = evtDate.toLocaleDateString(undefined, { month: "short" });
+                    const dayStr = evtDate.toLocaleDateString(undefined, { day: "numeric" });
+                    const timeStr = evtDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 
-                <div className="flex gap-3 items-center border-b border-neutrals-borderLight pb-3 last:border-0 last:pb-0">
-                  <div className="h-10 w-10 shrink-0 bg-purple-50 text-purple-700 rounded-[8px] flex flex-col items-center justify-center font-bold">
-                    <span className="text-[10px] leading-none uppercase">Jun</span>
-                    <span className="text-sm leading-none mt-0.5">28</span>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-text-primary truncate">Monthly General Meeting</span>
-                    <span className="text-[11px] text-text-tertiary">Hall A &bull; 2:00 PM</span>
-                  </div>
-                </div>
+                    return (
+                      <div key={evt.id} className="flex gap-3 items-center border-b border-neutrals-borderLight pb-3 last:border-0 last:pb-0 text-left">
+                        <div className="h-10 w-10 shrink-0 bg-brand-light text-brand rounded-[8px] flex flex-col items-center justify-center font-bold border border-brand-border">
+                          <span className="text-[10px] leading-none uppercase">{monthStr}</span>
+                          <span className="text-sm leading-none mt-0.5">{dayStr}</span>
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="text-xs font-semibold text-text-primary truncate">{evt.title}</span>
+                          <span className="text-[11px] text-text-tertiary">{evt.location} &bull; {timeStr}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </CardContent>
           </Card>

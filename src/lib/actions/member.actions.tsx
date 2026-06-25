@@ -34,21 +34,21 @@ export async function registerMember(formData: FormData) {
     const full_name = formData.get("full_name") as string;
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const phone = formData.get("phone") as string;
+    const matric_number = formData.get("matric_number") as string;
+    const phone = formData.get("phone") as string || null;
     const date_of_birth = formData.get("date_of_birth") as string || null;
     const address = formData.get("address") as string || null;
-    const faculty = formData.get("faculty") as string;
-    const department = formData.get("department") as string;
-    const matric_number = formData.get("matric_number") as string;
-    const academic_level = formData.get("academic_level") as string;
-    const organ = formData.get("organ") as any;
+    const faculty = formData.get("faculty") as string || null;
+    const department = formData.get("department") as string || null;
+    const academic_level = formData.get("academic_level") as string || null;
+    const organ = formData.get("organ") as any || null;
     const society = formData.get("society") as string || null;
     const parish = formData.get("parish") as string || null;
     const passportPhotoFile = formData.get("passport_photo") as File | null;
 
-    console.log("[registerMember] called with:", { full_name, email, faculty, department, matric_number, organ, academic_level });
+    console.log("[registerMember] called with:", { full_name, email, matric_number });
 
-    if (!full_name || !email || !password || !faculty || !department || !matric_number || !organ) {
+    if (!full_name || !email || !password || !matric_number) {
       console.log("[registerMember] Missing required fields");
       return { error: "Required fields are missing" };
     }
@@ -426,3 +426,147 @@ export async function updateMemberRole(
   }
 }
 
+export async function updateProfile(formData: FormData, userId: string) {
+  try {
+    const full_name = formData.get("full_name") as string;
+    const phone = formData.get("phone") as string;
+    const date_of_birth = formData.get("date_of_birth") as string || null;
+    const address = formData.get("address") as string || null;
+    const society = formData.get("society") as string || null;
+    const parish = formData.get("parish") as string || null;
+    const faculty = formData.get("faculty") as string || null;
+    const department = formData.get("department") as string || null;
+    const academic_level = formData.get("academic_level") as string || null;
+    const organ = formData.get("organ") as any || null;
+    const passportPhotoFile = formData.get("passport_photo") as File | null;
+
+    if (!full_name) {
+      return { error: "Full Name is required" };
+    }
+
+    let passport_photo_url: string | undefined = undefined;
+    if (passportPhotoFile && passportPhotoFile.size > 0) {
+      passport_photo_url = await uploadPassportPhoto(passportPhotoFile, userId);
+    }
+
+    const updateData: any = {
+      full_name,
+      phone,
+      date_of_birth,
+      address,
+      society,
+      parish,
+      faculty,
+      department,
+      academic_level,
+      organ,
+    };
+
+    if (passport_photo_url) {
+      updateData.passport_photo_url = passport_photo_url;
+    }
+
+    const { error } = await adminClient
+      .from("profiles")
+      .update(updateData)
+      .eq("id", userId);
+
+    if (error) {
+      return { error: `Profile update failed: ${error.message}` };
+    }
+
+    // Write audit log
+    await adminClient.from("audit_log").insert({
+      actor_id: userId,
+      action: "update_profile",
+      target_type: "profile",
+      target_id: userId,
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/profile");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "An error occurred during profile update." };
+  }
+}
+
+export async function updateMemberBiodata(formData: FormData, adminId: string, targetMemberId: string) {
+  try {
+    const full_name = formData.get("full_name") as string;
+    const phone = formData.get("phone") as string;
+    const date_of_birth = formData.get("date_of_birth") as string || null;
+    const address = formData.get("address") as string || null;
+    const society = formData.get("society") as string || null;
+    const parish = formData.get("parish") as string || null;
+    const faculty = formData.get("faculty") as string || null;
+    const department = formData.get("department") as string || null;
+    const academic_level = formData.get("academic_level") as string || null;
+    const matric_number = formData.get("matric_number") as string || null;
+    const organ = formData.get("organ") as any || null;
+
+    if (!full_name) {
+      return { error: "Full Name is required" };
+    }
+
+    const updateData: any = {
+      full_name,
+      phone,
+      date_of_birth,
+      address,
+      society,
+      parish,
+      faculty,
+      department,
+      academic_level,
+      matric_number,
+      organ,
+    };
+
+    const { error } = await adminClient
+      .from("profiles")
+      .update(updateData)
+      .eq("id", targetMemberId);
+
+    if (error) {
+      return { error: `Profile update failed: ${error.message}` };
+    }
+
+    await adminClient.from("audit_log").insert({
+      actor_id: adminId,
+      action: "super_admin_update_biodata",
+      target_type: "profile",
+      target_id: targetMemberId,
+    });
+
+    revalidatePath("/admin/members");
+    revalidatePath(`/admin/members/${targetMemberId}`);
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "An error occurred during profile update." };
+  }
+}
+
+export async function sendPasswordReset(email: string, adminId: string) {
+  try {
+    const { data, error } = await adminClient.auth.admin.generateLink({
+      type: "recovery",
+      email,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await adminClient.from("audit_log").insert({
+      actor_id: adminId,
+      action: "super_admin_password_reset",
+      target_type: "auth",
+      metadata: { email },
+    });
+
+    return { success: true, link: data.properties?.action_link };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to generate reset link" };
+  }
+}

@@ -13,10 +13,13 @@ import {
   User as UserIcon,
   LogOut,
   ShieldCheck,
-  Home
+  Home,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth.actions";
 import Link from "next/link";
+import { useTheme } from "@/lib/utils/theme";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -26,6 +29,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile } = useUser();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
   const handleLogout = async () => {
@@ -45,7 +49,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-[60px] w-full items-center justify-between border-b border-neutrals-borderLight bg-white px-4 md:px-6 select-none shadow-none">
+    <header className="sticky top-0 z-30 flex h-[60px] w-full items-center justify-between border-b border-neutrals-borderLight bg-surface px-4 md:px-6 select-none shadow-none">
       {/* Left side: Mobile Toggle & Page Title / Breadcrumbs */}
       <div className="flex items-center gap-3">
         <button
@@ -95,6 +99,19 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
           />
         </div>
 
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-page transition-all duration-200 border-none bg-transparent group"
+        >
+          {resolvedTheme === "dark" ? (
+            <Sun className="h-[18px] w-[18px] text-amber-honey transition-transform group-hover:rotate-12" />
+          ) : (
+            <Moon className="h-[18px] w-[18px] transition-transform group-hover:-rotate-12" />
+          )}
+        </button>
+
         {/* Notifications Icon Button */}
         <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-page transition-colors border-none bg-transparent">
           <Bell className="h-[18px] w-[18px]" />
@@ -127,7 +144,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
                   className="fixed inset-0 z-10"
                   onClick={() => setDropdownOpen(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-48 origin-top-right rounded-[10px] border border-neutrals-border bg-white p-1.5 shadow-dropdown z-20 animate-in fade-in-50 slide-in-from-top-1 duration-100">
+                <div className="absolute right-0 mt-1.5 w-48 origin-top-right rounded-[10px] border border-neutrals-border bg-surface p-1.5 shadow-dropdown z-20 animate-in fade-in-50 slide-in-from-top-1 duration-100">
                   <div className="px-2.5 py-1.5 text-xs border-b border-neutrals-borderLight">
                     <p className="font-semibold text-text-primary truncate">
                       {profile.full_name}

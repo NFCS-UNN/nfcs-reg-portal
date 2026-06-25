@@ -54,8 +54,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-[400px] flex flex-col gap-6">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center gap-2">
-          <div className="h-12 w-12 rounded-[10px] bg-brand flex items-center justify-center text-white font-bold text-xl select-none">
-            N
+          <div className="h-12 w-12 rounded-[10px] overflow-hidden select-none">
+            <img src="/nfcs-unn-logo.png" alt="NFCS UNN Logo" className="h-full w-full object-cover" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-bold tracking-tight text-text-primary">

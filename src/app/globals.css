@@ -5,8 +5,536 @@
 @tailwind utilities;
 
 :root {
-  --background: #F4F6F8;
+  /* Original Palette */
+  --indigo-velvet: #4d2eab;
+  --white: #ffffff;
+  --brick-ember: #cb1310;
+  --alabaster-grey: #eaeaea;
+  --amber-honey: #e9a91f;
+  --prussian-blue: #01020f;
+  --prussian-blue-2: #02031a;
+  --jade-green: #1eb759;
+
+  /* Standard Shadcn CSS variables (Light Mode) */
+  --background: var(--alabaster-grey);
   --foreground: #111827;
+
+  --card: var(--white);
+  --card-foreground: #111827;
+
+  --popover: var(--white);
+  --popover-foreground: #111827;
+
+  --primary: var(--indigo-velvet);
+  --primary-foreground: var(--white);
+
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+
+  --accent: var(--brick-ember);
+  --accent-foreground: var(--white);
+
+  --destructive: var(--brick-ember);
+  --destructive-foreground: var(--white);
+
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: var(--indigo-velvet);
+
+  /* Theme variables mapping to Shadcn variables */
+  --brand-default: var(--primary);
+  --brand-accent: var(--primary);
+  --brand-dark: var(--primary);
+  --brand-light: var(--secondary);
+  --brand-border: var(--border);
+  --brand-orange: var(--amber-honey);
+
+  --danger: var(--destructive);
+
+  --surface-default: var(--card);
+  --surface-subtle: var(--muted);
+  --surface-page: var(--background);
+  --surface-mint: var(--background);
+
+  --neutrals-white: var(--card);
+  --neutrals-page-bg: var(--background);
+  --neutrals-page-bg-mint: var(--background);
+  --neutrals-surface-subtle: var(--muted);
+  --neutrals-border: var(--border);
+  --neutrals-border-light: var(--border);
+  --neutrals-divider: var(--border);
+
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted-foreground);
+  --text-tertiary: var(--muted-foreground);
+  --text-on-dark: var(--white);
+  --text-on-accent: var(--white);
+  --text-link: var(--primary);
+  --text-danger: var(--destructive);
+  --text-muted: var(--muted-foreground);
+
+  /* Status Colors */
+  --success-bg: #d1fae5;
+  --success-text: #065f46;
+  --success-border: #6ee7b7;
+
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+  --warning-border: #fcd34d;
+
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --error-border: #fca5a5;
+
+  --info-bg: #dbeafe;
+  --info-text: #1e40af;
+  --info-border: #93c5fd;
+
+  --pending-bg: #fef9c3;
+  --pending-text: #854d0e;
+  --pending-border: #fde68a;
+
+  /* Role Accents */
+  --role-student: #1d4ed8;
+  --role-student-bg: #dbeafe;
+  --role-alumnus: #7c3aed;
+  --role-alumnus-bg: #ede9fe;
+  --role-exco: #065f46;
+  --role-exco-bg: #d1fae5;
+  --role-superadmin: var(--destructive);
+  --role-superadmin-bg: #fee2e2;
+
+  /* Note Cards */
+  --note-green: #bbfccc;
+  --note-green-surface: #9ef9b3;
+  --note-green-text: #064e3b;
+  --note-green-subtext: #065f46;
+  --note-green-meta: #059669;
+
+  --note-purple: #c4b5fd;
+  --note-purple-surface: #a78bfa;
+  --note-purple-text: #3b0764;
+  --note-purple-subtext: #4c1d95;
+  --note-purple-meta: #6d28d9;
+
+  --note-amber: #fde68a;
+  --note-amber-text: #78350f;
+  --note-amber-subtext: #92400e;
+
+  --note-blue: #bfdbfe;
+  --note-blue-text: #1e3a8a;
+
+  /* Task Status */
+  --task-inprogress-bg: #fde68a;
+  --task-inprogress-text: #78350f;
+  --task-todo-bg: #dbeafe;
+  --task-todo-text: #1e40af;
+  --task-done-bg: #d1fae5;
+  --task-done-text: #065f46;
+  --task-overdue-bg: #fee2e2;
+  --task-overdue-text: #991b1b;
+
+  /* Inline color overrides that need token versions */
+  --emerald-50: #ecfdf5;
+  --emerald-100: #d1fae5;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-600: #d97706;
+  --rose-50: #fff1f2;
+  --indigo-50: #eef2ff;
+  --indigo-700: #4338ca;
+  --blue-50: #eff6ff;
+  --blue-700: #1d4ed8;
+  --purple-50: #faf5ff;
+  --purple-700: #7e22ce;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-700: #374151;
+}
+
+/* ============================================================
+   Dark Mode — both .dark class (manual toggle) AND system pref
+   ============================================================ */
+.dark,
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Standard Shadcn CSS variables (Dark Mode) */
+    --background: var(--prussian-blue);
+    --foreground: #f9fafb;
+
+    --card: var(--prussian-blue-2);
+    --card-foreground: #f9fafb;
+
+    --popover: var(--prussian-blue-2);
+    --popover-foreground: #f9fafb;
+
+    --primary: var(--indigo-velvet);
+    --primary-foreground: var(--white);
+
+    --secondary: #0c0e1a;
+    --secondary-foreground: #f9fafb;
+
+    --muted: #0c0e1a;
+    --muted-foreground: #9ca3af;
+
+    --accent: var(--brick-ember);
+    --accent-foreground: var(--white);
+
+    --destructive: var(--brick-ember);
+    --destructive-foreground: var(--white);
+
+    --border: #16182c;
+    --input: #16182c;
+    --ring: var(--indigo-velvet);
+
+    /* Custom overrides for specific variables that need darker variants */
+    --brand-default: #7c5dfa;
+    --brand-accent: #9075fc;
+    --brand-dark: #6646e5;
+    --brand-light: #1c1538;
+    --brand-border: #3b2c75;
+    --brand-orange: var(--amber-honey);
+
+    --danger: #ef4444;
+
+    /* Status Colors */
+    --success-bg: #092f1b;
+    --success-text: var(--jade-green);
+    --success-border: #0e5e33;
+
+    --warning-bg: #2d1f05;
+    --warning-text: var(--amber-honey);
+    --warning-border: #5f3e09;
+
+    --error-bg: #2f0d0e;
+    --error-text: var(--brick-ember);
+    --error-border: #621417;
+
+    --info-bg: #0b1e3b;
+    --info-text: #60a5fa;
+    --info-border: #143564;
+
+    --pending-bg: #2d2605;
+    --pending-text: var(--amber-honey);
+    --pending-border: #5f5209;
+
+    /* Role Accents */
+    --role-student: #60a5fa;
+    --role-student-bg: #0b2545;
+    --role-alumnus: #a78bfa;
+    --role-alumnus-bg: #1e1236;
+    --role-exco: var(--jade-green);
+    --role-exco-bg: #092f1b;
+    --role-superadmin: #f87171;
+    --role-superadmin-bg: #2f0d0e;
+
+    /* Note Cards */
+    --note-green: #0e5e33;
+    --note-green-surface: #0a4727;
+    --note-green-text: #a7f3d0;
+    --note-green-subtext: #86efac;
+    --note-green-meta: #34d399;
+
+    --note-purple: #4c1d95;
+    --note-purple-surface: #3b0764;
+    --note-purple-text: #ddd6fe;
+    --note-purple-subtext: #c084fc;
+    --note-purple-meta: #a78bfa;
+
+    --note-amber: #78350f;
+    --note-amber-text: #fde68a;
+    --note-amber-subtext: #fcd34d;
+
+    --note-blue: #1e3a8a;
+    --note-blue-text: #bfdbfe;
+
+    /* Task Status */
+    --task-inprogress-bg: #3c2f0f;
+    --task-inprogress-text: #fde68a;
+    --task-todo-bg: #172554;
+    --task-todo-text: #bfdbfe;
+    --task-done-bg: #064e3b;
+    --task-done-text: #a7f3d0;
+    --task-overdue-bg: #450a0a;
+    --task-overdue-text: #fca5a5;
+
+    /* Inline color overrides — dark versions */
+    --emerald-50: #092f1b;
+    --emerald-100: #064e3b;
+    --emerald-600: #34d399;
+    --emerald-700: #6ee7b7;
+    --amber-50: #2d1f05;
+    --amber-100: #3c2f0f;
+    --amber-600: #fbbf24;
+    --rose-50: #2f0d0e;
+    --indigo-50: #1e1b4b;
+    --indigo-700: #a5b4fc;
+    --blue-50: #0b1e3b;
+    --blue-700: #60a5fa;
+    --purple-50: #1e1236;
+    --purple-700: #c084fc;
+    --gray-50: #0c0e1a;
+    --gray-100: #16182c;
+    --gray-200: #1e2035;
+    --gray-700: #9ca3af;
+  }
+}
+
+/* When .light is explicitly set (overrides system dark) */
+.light {
+  --background: var(--alabaster-grey);
+  --foreground: #111827;
+  --card: var(--white);
+  --card-foreground: #111827;
+  --popover: var(--white);
+  --popover-foreground: #111827;
+  --primary: var(--indigo-velvet);
+  --primary-foreground: var(--white);
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: var(--brick-ember);
+  --accent-foreground: var(--white);
+  --destructive: var(--brick-ember);
+  --destructive-foreground: var(--white);
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: var(--indigo-velvet);
+  --brand-default: var(--primary);
+  --brand-accent: var(--primary);
+  --brand-dark: var(--primary);
+  --brand-light: var(--secondary);
+  --brand-border: var(--border);
+  --danger: var(--destructive);
+  --success-bg: #d1fae5;
+  --success-text: #065f46;
+  --success-border: #6ee7b7;
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+  --warning-border: #fcd34d;
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --error-border: #fca5a5;
+  --info-bg: #dbeafe;
+  --info-text: #1e40af;
+  --info-border: #93c5fd;
+  --pending-bg: #fef9c3;
+  --pending-text: #854d0e;
+  --pending-border: #fde68a;
+  --note-green: #bbfccc;
+  --note-green-surface: #9ef9b3;
+  --note-green-text: #064e3b;
+  --note-green-subtext: #065f46;
+  --note-green-meta: #059669;
+  --note-purple: #c4b5fd;
+  --note-purple-surface: #a78bfa;
+  --note-purple-text: #3b0764;
+  --note-purple-subtext: #4c1d95;
+  --note-purple-meta: #6d28d9;
+  --note-amber: #fde68a;
+  --note-amber-text: #78350f;
+  --note-amber-subtext: #92400e;
+  --note-blue: #bfdbfe;
+  --note-blue-text: #1e3a8a;
+  --emerald-50: #ecfdf5;
+  --emerald-100: #d1fae5;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-600: #d97706;
+  --rose-50: #fff1f2;
+  --indigo-50: #eef2ff;
+  --indigo-700: #4338ca;
+  --blue-50: #eff6ff;
+  --blue-700: #1d4ed8;
+  --purple-50: #faf5ff;
+  --purple-700: #7e22ce;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-700: #374151;
+}
+
+/* ============================================================
+   Dark mode overrides for hardcoded utility classes
+   (applies to both manual .dark and system dark preference)
+   ============================================================ */
+.dark .bg-white,
+@media (prefers-color-scheme: dark) {
+  .bg-white {
+    background-color: var(--card) !important;
+  }
+}
+
+.dark .bg-white {
+  background-color: var(--card) !important;
+}
+
+.dark .bg-emerald-50,
+.dark .bg-emerald-50\/50 {
+  background-color: var(--emerald-50) !important;
+}
+
+.dark .bg-amber-50,
+.dark .bg-amber-50\/50 {
+  background-color: var(--amber-50) !important;
+}
+
+.dark .bg-rose-50 {
+  background-color: var(--rose-50) !important;
+}
+
+.dark .bg-indigo-50 {
+  background-color: var(--indigo-50) !important;
+}
+
+.dark .bg-blue-50 {
+  background-color: var(--blue-50) !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: var(--purple-50) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: var(--gray-50) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--gray-100) !important;
+}
+
+.dark .bg-red-50,
+.dark .bg-red-50\/50 {
+  background-color: var(--rose-50) !important;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-emerald-200,
+.dark .border-amber-200,
+.dark .border-red-200,
+.dark .border-blue-200,
+.dark .border-indigo-200 {
+  border-color: var(--border) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: var(--foreground) !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .text-emerald-600,
+.dark .text-emerald-700 {
+  color: var(--emerald-600) !important;
+}
+
+.dark .text-amber-600,
+.dark .text-amber-700,
+.dark .text-amber-800 {
+  color: var(--amber-600) !important;
+}
+
+.dark .text-blue-500,
+.dark .text-blue-700 {
+  color: var(--blue-700) !important;
+}
+
+.dark .text-indigo-700 {
+  color: var(--indigo-700) !important;
+}
+
+.dark .text-purple-700 {
+  color: var(--purple-700) !important;
+}
+
+/* system-preference overrides for hardcoded utility classes */
+@media (prefers-color-scheme: dark) {
+  .bg-white {
+    background-color: var(--card) !important;
+  }
+  .bg-emerald-50,
+  .bg-emerald-50\/50 {
+    background-color: var(--emerald-50) !important;
+  }
+  .bg-amber-50,
+  .bg-amber-50\/50 {
+    background-color: var(--amber-50) !important;
+  }
+  .bg-rose-50 {
+    background-color: var(--rose-50) !important;
+  }
+  .bg-indigo-50 {
+    background-color: var(--indigo-50) !important;
+  }
+  .bg-blue-50 {
+    background-color: var(--blue-50) !important;
+  }
+  .bg-purple-50 {
+    background-color: var(--purple-50) !important;
+  }
+  .bg-gray-50 {
+    background-color: var(--gray-50) !important;
+  }
+  .bg-gray-100 {
+    background-color: var(--gray-100) !important;
+  }
+  .bg-red-50,
+  .bg-red-50\/50 {
+    background-color: var(--rose-50) !important;
+  }
+  .border-gray-100,
+  .border-gray-200,
+  .border-gray-300,
+  .border-slate-100,
+  .border-slate-200,
+  .border-emerald-200,
+  .border-amber-200,
+  .border-red-200,
+  .border-blue-200,
+  .border-indigo-200,
+  .border-neutrals-borderLight {
+    border-color: var(--border) !important;
+  }
+  .text-slate-900,
+  .text-gray-800,
+  .text-gray-700 {
+    color: var(--foreground) !important;
+  }
+  .text-gray-600,
+  .text-gray-500 {
+    color: var(--muted-foreground) !important;
+  }
+  .text-emerald-600,
+  .text-emerald-700 {
+    color: var(--emerald-600) !important;
+  }
+  .text-amber-600,
+  .text-amber-700,
+  .text-amber-800 {
+    color: var(--amber-600) !important;
+  }
+  .text-blue-500,
+  .text-blue-700 {
+    color: var(--blue-700) !important;
+  }
 }
 
 body {
@@ -28,11 +556,31 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E5E7EB;
+  background: var(--border, #E5E7EB);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #D1D5DB;
+  background: var(--muted-foreground, #D1D5DB);
 }
 
+/* Theme transition for smooth dark/light switching */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Recharts overrides for dark mode */
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: var(--border) !important;
+}
+
+.dark .recharts-text {
+  fill: var(--muted-foreground) !important;
+}
+
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}

@@ -6,7 +6,7 @@ export const paymentSchema = z.object({
   amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
     message: "Amount must be a positive number",
   }),
-  dues_type: z.enum(DUES_TYPES, { required_error: "Please select a dues type" }),
+  dues_type: z.enum(DUES_TYPES, { message: "Please select a dues type" }),
   payment_period: z.string().min(4, "Session label is required (e.g. 2024/2025 Session)"),
   notes: z.string().optional().or(z.literal("")),
 });

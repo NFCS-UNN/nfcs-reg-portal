@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -19,34 +19,54 @@ import {
   Calendar,
   MapPin,
   School,
-  Activity,
-  Heart,
   Church,
-  FileCheck,
   UserX,
   UserCheck,
   ArrowUpCircle
 } from "lucide-react";
 import Link from "next/link";
+import { formatDate } from "@/lib/utils/date";
+import { MemberProfileEditor } from "./MemberProfileEditor";
+
+function getStatusBadgeVariant(status: string) {
+  switch (status) {
+    case "active": return "active";
+    case "pending": return "pending";
+    case "suspended": return "unpaid";
+    case "legacy": return "inactive";
+    default: return "inactive";
+  }
+}
+
+function getRoleBadgeVariant(role: string) {
+  switch (role) {
+    case "student": return "student";
+    case "alumnus": return "alumnus";
+    case "exco": return "exco";
+    case "super_admin": return "superAdmin";
+    default: return "inactive";
+  }
+}
 
 interface PageProps {
-  params: {
-    id: string;
-  };
+  params: { id: string };
 }
 
 export default async function MemberDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const memberId = params.id;
 
-  // Retrieve current active exco session
-  const {
-    data: { user: currentUser },
-  } = await supabase.auth.getUser();
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  if (!currentUser) return redirect("/login");
 
-  if (!currentUser) {
-    return redirect("/login");
-  }
+  // Get current user's role
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", currentUser.id)
+    .single();
+
+  const isSuperAdmin = currentProfile?.role === "super_admin";
 
   // Retrieve member profile
   const { data: member, error } = await supabase
@@ -67,22 +87,26 @@ export default async function MemberDetailPage({ params }: PageProps) {
     );
   }
 
-  // Action wrappers using Next.js formAction
+  // Fetch member payments
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("profile_id" as any, memberId)
+    .order("created_at", { ascending: false });
+
+  // Server action wrappers
   const handleApprove = async () => {
     "use server";
     await approveMember(memberId, currentUser.id);
   };
-
   const handleReject = async () => {
     "use server";
     await rejectMember(memberId, currentUser.id);
   };
-
   const handleSuspend = async () => {
     "use server";
     await suspendMember(memberId, currentUser.id);
   };
-
   const handleUpgrade = async () => {
     "use server";
     await upgradeMemberToAlumnus(memberId, currentUser.id);
@@ -104,7 +128,7 @@ export default async function MemberDetailPage({ params }: PageProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Side: Avatar, Name, Main Actions */}
         <div className="space-y-6 lg:col-span-1">
-          <Card className="border border-neutrals-borderLight shadow-card bg-white">
+          <Card className="border border-neutrals-borderLight shadow-card bg-white dark:bg-prussian-blue-2">
             <CardContent className="p-6 flex flex-col items-center text-center gap-4">
               {/* Photo */}
               <Avatar
@@ -124,8 +148,8 @@ export default async function MemberDetailPage({ params }: PageProps) {
                 </h2>
                 <p className="text-xs text-text-tertiary select-all truncate">{member.email}</p>
                 <div className="flex justify-center gap-1.5 mt-2">
-                  <Badge variant={member.status}>{member.status}</Badge>
-                  <Badge variant={member.role}>{member.role}</Badge>
+                  <Badge variant={getStatusBadgeVariant(member.status)}>{member.status}</Badge>
+                  <Badge variant={getRoleBadgeVariant(member.role)}>{member.role}</Badge>
                 </div>
               </div>
 
@@ -134,6 +158,10 @@ export default async function MemberDetailPage({ params }: PageProps) {
                 <div className="flex items-center gap-2 text-xs text-text-secondary select-all">
                   <Phone className="h-3.5 w-3.5 text-text-tertiary" />
                   <span>{member.phone || "No phone added"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-text-secondary select-all">
+                  <Mail className="h-3.5 w-3.5 text-text-tertiary" />
+                  <span>{member.email}</span>
                 </div>
                 {member.date_of_birth && (
                   <div className="flex items-center gap-2 text-xs text-text-secondary">
@@ -145,6 +173,12 @@ export default async function MemberDetailPage({ params }: PageProps) {
                   <div className="flex items-center gap-2 text-xs text-text-secondary truncate">
                     <MapPin className="h-3.5 w-3.5 text-text-tertiary" />
                     <span>{member.address}</span>
+                  </div>
+                )}
+                {member.created_at && (
+                  <div className="flex items-center gap-2 text-xs text-text-secondary">
+                    <Calendar className="h-3.5 w-3.5 text-text-tertiary" />
+                    <span>Joined: {formatDate(member.created_at)}</span>
                   </div>
                 )}
               </div>
@@ -193,59 +227,106 @@ export default async function MemberDetailPage({ params }: PageProps) {
 
         {/* Right Side: Detailed Profiling cards */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Academic Profile */}
-          <Card className="border border-neutrals-borderLight shadow-card bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="space-y-1">
-                <CardTitle>Academic Profile</CardTitle>
-                <CardDescription>University details</CardDescription>
-              </div>
-              <School className="h-5 w-5 text-brand-accent" />
-            </CardHeader>
-            <CardContent className="p-6 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Faculty</span>
-                <p className="text-sm font-medium text-text-primary">{member.faculty || "—"}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Department</span>
-                <p className="text-sm font-medium text-text-primary">{member.department || "—"}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Matric Number</span>
-                <p className="text-sm font-mono text-text-primary">{member.matric_number || "—"}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Academic Level</span>
-                <p className="text-sm font-medium text-text-primary">{member.academic_level || "—"}</p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Super Admin: editable biodata editor */}
+          {isSuperAdmin ? (
+            <MemberProfileEditor member={member} adminId={currentUser.id} />
+          ) : (
+            <>
+              {/* Academic Profile (read-only for Exco) */}
+              <Card className="border border-neutrals-borderLight shadow-card bg-white dark:bg-prussian-blue-2">
+                <div className="p-6 flex items-center justify-between border-b border-neutrals-borderLight">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold text-text-primary">Academic Profile</h3>
+                    <p className="text-xs text-text-secondary">University details</p>
+                  </div>
+                  <School className="h-5 w-5 text-brand-accent" />
+                </div>
+                <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Faculty</span>
+                    <p className="text-sm font-medium text-text-primary">{member.faculty || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Department</span>
+                    <p className="text-sm font-medium text-text-primary">{member.department || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Matric Number</span>
+                    <p className="text-sm font-mono text-text-primary">{member.matric_number || "—"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Academic Level</span>
+                    <p className="text-sm font-medium text-text-primary">{member.academic_level || "—"}</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Catholic & Organ Profile */}
-          <Card className="border border-neutrals-borderLight shadow-card bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
+              {/* Catholic & Organ Profile (read-only for Exco) */}
+              <Card className="border border-neutrals-borderLight shadow-card bg-white dark:bg-prussian-blue-2">
+                <div className="p-6 flex items-center justify-between border-b border-neutrals-borderLight">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold text-text-primary">NFCS Organ & Parish details</h3>
+                    <p className="text-xs text-text-secondary">Communal details</p>
+                  </div>
+                  <Church className="h-5 w-5 text-brand-accent" />
+                </div>
+                <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Assigned Organ</span>
+                    <p className="text-sm font-medium text-text-primary capitalize">
+                      {member.organ ? member.organ.replace("_", " ") : "Not assigned"}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Society / Association</span>
+                    <p className="text-sm font-medium text-text-primary">{member.society || "None listed"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-text-tertiary uppercase font-semibold">Home Parish</span>
+                    <p className="text-sm font-medium text-text-primary">{member.parish || "None listed"}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Payment History — visible to exco and super admin */}
+          <Card className="border border-neutrals-borderLight shadow-card bg-white dark:bg-prussian-blue-2">
+            <div className="p-6 flex items-center justify-between border-b border-neutrals-borderLight">
               <div className="space-y-1">
-                <CardTitle>NFCS Organ & Parish details</CardTitle>
-                <CardDescription>Communal details</CardDescription>
+                <h3 className="text-sm font-bold text-text-primary">Payment History</h3>
+                <p className="text-xs text-text-secondary">Full dues & payment record</p>
               </div>
-              <Church className="h-5 w-5 text-brand-accent" />
-            </CardHeader>
-            <CardContent className="p-6 pt-0 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Assigned Organ</span>
-                <p className="text-sm font-medium text-text-primary capitalize">
-                  {member.organ ? member.organ.replace("_", " ") : "Not assigned"}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Society / Association</span>
-                <p className="text-sm font-medium text-text-primary">{member.society || "None listed"}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-text-tertiary uppercase font-semibold">Home Parish</span>
-                <p className="text-sm font-medium text-text-primary">{member.parish || "None listed"}</p>
-              </div>
+            </div>
+            <CardContent className="p-6">
+              {!payments || payments.length === 0 ? (
+                <p className="text-xs text-text-secondary text-center py-4">No payment records found for this member.</p>
+              ) : (
+                <div className="space-y-3">
+                  {payments.map((payment: any) => (
+                    <div key={payment.id} className="flex items-center justify-between p-3 rounded-lg bg-surface-page border border-neutrals-borderLight">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-semibold text-text-primary">
+                          {payment.description || `Dues – ${payment.academic_session || "N/A"}`}
+                        </span>
+                        <span className="text-[11px] text-text-tertiary">
+                          {formatDate(payment.created_at)} · {payment.channel || "online"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-text-primary">
+                          ₦{Number(payment.amount).toLocaleString()}
+                        </span>
+                        <Badge
+                          variant={payment.status === "confirmed" ? "active" : payment.status === "pending" ? "pending" : "unpaid"}
+                        >
+                          {payment.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

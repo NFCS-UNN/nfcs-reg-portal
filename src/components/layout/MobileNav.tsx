@@ -111,12 +111,12 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
       />
 
       {/* Slide-in Content */}
-      <div className="relative flex w-[240px] max-w-xs flex-col bg-white p-[16px_12px] shadow-modal animate-in slide-in-from-left duration-200">
+      <div className="relative flex w-[240px] max-w-xs flex-col bg-surface p-[16px_12px] shadow-modal animate-in slide-in-from-left duration-200">
         {/* Header with logo & close */}
         <div className="flex items-center justify-between border-b border-neutrals-borderLight pb-4 mb-4 px-2">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-[6px] bg-brand flex items-center justify-center text-white font-bold text-sm">
-              N
+            <div className="h-7 w-7 rounded-[6px] overflow-hidden select-none">
+              <img src="/nfcs-unn-logo.png" alt="NFCS UNN Logo" className="h-full w-full object-cover" />
             </div>
             <span className="text-[13px] font-semibold text-text-primary">
               NFCS UNN

@@ -9,8 +9,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-brand text-slate-900 hover:bg-brand-accent hover:text-white active:bg-brand-dark border-none shadow-none disabled:bg-neutrals-border disabled:text-text-tertiary",
-        secondary: "bg-white text-gray-700 border border-neutrals-border hover:bg-surface-subtle hover:border-text-tertiary shadow-none disabled:bg-surface-subtle disabled:text-text-tertiary disabled:border-neutrals-border",
+        primary: "bg-brand text-white hover:bg-brand-accent hover:text-white active:bg-brand-dark border-none shadow-none disabled:bg-neutrals-border disabled:text-text-tertiary",
+        secondary: "bg-surface text-text-primary border border-neutrals-border hover:bg-surface-subtle hover:border-text-tertiary shadow-none disabled:bg-surface-subtle disabled:text-text-tertiary disabled:border-neutrals-border",
         danger: "bg-danger text-white hover:bg-[#a83318] active:bg-[#8c2912] border-none shadow-none",
         ghost: "bg-transparent text-brand-dark hover:bg-brand-light border-none shadow-none",
         iconButton: "h-9 w-9 border border-neutrals-border hover:bg-surface-page hover:border-text-tertiary text-text-secondary rounded-lg justify-center p-0 shadow-none",

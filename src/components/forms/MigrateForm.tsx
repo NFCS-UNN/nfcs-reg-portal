@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { migrationSchema, type MigrationFormValues } from "@/lib/validations/migration.schema";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,18 @@ import { AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/hooks/useUser";
 import { ORGANS } from "@/lib/validations/member.schema";
+import { UNN_CAMPUS_DATA } from "@/lib/utils/unn-data";
+
+// Year fee breakdown (matching the fee engine)
+const DUES_YEARS = [
+  { label: "1st Year (Membership Levy)", value: "year_1", total: 500, breakdown: "₦250 dues + ₦150 const + ₦100 CGAN" },
+  { label: "2nd Year", value: "year_2", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
+  { label: "3rd Year", value: "year_3", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
+  { label: "4th Year (Non-finalist)", value: "year_4", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
+  { label: "4th Year (Finalist)", value: "year_4f", total: 500, breakdown: "₦250 dues + ₦50 const + ₦200 CGAN" },
+  { label: "5th Year", value: "year_5", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
+  { label: "6th Year (Finalist)", value: "year_6", total: 300, breakdown: "₦250 dues + ₦50 const + ₦0 CGAN" },
+];
 
 export function MigrateForm() {
   const { toast } = useToast();
@@ -20,10 +32,20 @@ export function MigrateForm() {
   const [success, setSuccess] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
+  // Faculty / Department state
+  const [selectedFaculty, setSelectedFaculty] = React.useState("");
+  const faculties = Object.keys(UNN_CAMPUS_DATA);
+  const departments: string[] = selectedFaculty ? (UNN_CAMPUS_DATA[selectedFaculty] || []) : [];
+
+  // Dues year selection
+  const [selectedDuesYear, setSelectedDuesYear] = React.useState("");
+  const selectedDuesInfo = DUES_YEARS.find((d) => d.value === selectedDuesYear);
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<MigrationFormValues>({
     resolver: zodResolver(migrationSchema),
@@ -45,6 +67,24 @@ export function MigrateForm() {
     },
   });
 
+  const handleFacultyChange = (fac: string) => {
+    setSelectedFaculty(fac);
+    setValue("faculty", fac);
+    setValue("department", "");
+  };
+
+  const handleDepartmentChange = (dept: string) => {
+    setValue("department", dept);
+  };
+
+  const handleDuesYearChange = (yearVal: string) => {
+    setSelectedDuesYear(yearVal);
+    const info = DUES_YEARS.find((d) => d.value === yearVal);
+    if (info) {
+      setValue("dues_amount_paid", String(info.total));
+    }
+  };
+
   const onSubmit = async (values: MigrationFormValues) => {
     if (!profile) return;
     setIsLoading(true);
@@ -54,19 +94,13 @@ export function MigrateForm() {
       const result = await migrateLegacyMember(values, profile.id);
       if (result?.error) {
         setError(result.error);
-        toast({
-          title: "Migration Failed",
-          description: result.error,
-          variant: "error",
-        });
+        toast({ title: "Migration Failed", description: result.error, variant: "error" });
       } else {
         setSuccess(true);
         reset();
-        toast({
-          title: "Record Migrated",
-          description: "Legacy member record has been created successfully.",
-          variant: "success",
-        });
+        setSelectedFaculty("");
+        setSelectedDuesYear("");
+        toast({ title: "Record Migrated", description: "Legacy member record has been created successfully.", variant: "success" });
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -133,7 +167,7 @@ export function MigrateForm() {
               <Select error={!!errors.migration_source} {...register("migration_source")}>
                 <option value="manual_entry">Manual Entry</option>
                 <option value="notebook">Notebook Register</option>
-                <option value="dues_card">Dues Card Card</option>
+                <option value="dues_card">Dues Card</option>
               </Select>
             </div>
           </div>
@@ -145,27 +179,47 @@ export function MigrateForm() {
             <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">Academic & Church Info</h3>
           </div>
 
+          {/* Faculty → Department autofill */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-text-secondary">Faculty</label>
-              <Input error={!!errors.faculty} {...register("faculty")} placeholder="Arts" />
+              <select
+                value={selectedFaculty}
+                onChange={(e) => handleFacultyChange(e.target.value)}
+                className="h-9 w-full rounded-lg border border-gray-200 bg-white dark:bg-prussian-blue-2 px-3 py-1.5 text-[13px] text-text-primary focus:border-brand-accent focus:outline-none"
+              >
+                <option value="">Select Faculty</option>
+                {faculties.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+              {errors.faculty && <p className="text-[11px] text-danger mt-1 font-medium">{errors.faculty.message}</p>}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-text-secondary">Department</label>
-              <Input error={!!errors.department} {...register("department")} placeholder="History" />
+              <select
+                onChange={(e) => handleDepartmentChange(e.target.value)}
+                disabled={!selectedFaculty}
+                className="h-9 w-full rounded-lg border border-gray-200 bg-white dark:bg-prussian-blue-2 px-3 py-1.5 text-[13px] text-text-primary focus:border-brand-accent focus:outline-none disabled:opacity-50"
+              >
+                <option value="">{selectedFaculty ? "Select Department" : "Select faculty first"}</option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              {errors.department && <p className="text-[11px] text-danger mt-1 font-medium">{errors.department.message}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <option value=""></option>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-text-secondary">Assigned Organ</label>
               <Select error={!!errors.organ} {...register("organ")}>
                 <option value="">Select Organ</option>
                 {ORGANS.map((o) => (
                   <option key={o} value={o}>
-                    {o.replace("_", " ").toUpperCase()}
+                    {o.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                   </option>
                 ))}
               </Select>
@@ -190,20 +244,48 @@ export function MigrateForm() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Year select — auto-fills amount */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Amount Paid (₦)</label>
-              <Input error={!!errors.dues_amount_paid} {...register("dues_amount_paid")} placeholder="5000" />
+              <label className="text-xs font-semibold text-text-secondary">Year Paid For</label>
+              <select
+                value={selectedDuesYear}
+                onChange={(e) => handleDuesYearChange(e.target.value)}
+                className="h-9 w-full rounded-lg border border-gray-200 bg-white dark:bg-prussian-blue-2 px-3 py-1.5 text-[13px] text-text-primary focus:border-brand-accent focus:outline-none"
+              >
+                <option value="">Select academic year...</option>
+                {DUES_YEARS.map((y) => (
+                  <option key={y.value} value={y.value}>
+                    {y.label} — ₦{y.total}
+                  </option>
+                ))}
+              </select>
+              {selectedDuesInfo && (
+                <p className="text-[11px] text-text-tertiary mt-1">
+                  {selectedDuesInfo.breakdown} = <span className="font-bold text-text-primary">₦{selectedDuesInfo.total}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Amount auto-filled but editable */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-text-secondary">Amount Paid (₦) <span className="text-text-tertiary font-normal">— auto-filled</span></label>
+              <Input
+                error={!!errors.dues_amount_paid}
+                {...register("dues_amount_paid")}
+                placeholder="auto-filled from year selection"
+              />
+              {errors.dues_amount_paid && <p className="text-[11px] text-danger mt-1 font-medium">{errors.dues_amount_paid.message}</p>}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-text-secondary">Payment Period / Session</label>
               <Input error={!!errors.dues_period} {...register("dues_period")} placeholder="e.g. 2022/2023" />
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-text-secondary">Migration Notes</label>
-            <Input {...register("notes")} placeholder="e.g. Transferred from Notebook Register page 22" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-text-secondary">Migration Notes</label>
+              <Input {...register("notes")} placeholder="e.g. Notebook Register page 22" />
+            </div>
           </div>
         </div>
 
