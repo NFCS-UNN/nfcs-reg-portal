@@ -103,7 +103,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
           <input
             type="text"
             placeholder="Search..."
-            className="h-9 w-[200px] rounded-lg bg-surface-page border border-transparent pl-9 pr-4 text-[13px] text-text-primary placeholder:text-text-tertiary transition-all focus:border-brand-accent focus:bg-white focus:outline-none focus:shadow-inputFocus"
+            className="h-9 w-[200px] rounded-lg bg-surface-page border border-transparent pl-9 pr-4 text-[13px] text-text-primary placeholder:text-text-tertiary transition-all focus:border-brand-accent  focus:outline-none focus:shadow-inputFocus"
           />
         </div>
 
@@ -113,7 +113,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
           onValueChange={(val) => setTheme(val as any)}
         >
           <SelectTrigger
-            className="h-9 w-[110px] rounded-lg border-none bg-transparent px-2 text-xs hover:bg-surface-page focus:ring-0 focus:shadow-none gap-1 text-text-secondary"
+            className="h-9 w-[110px] rounded-lg border-none bg-transparent px-2 text-xs hover:bg-surface-page focus:ring-0 focus:shadow-none gap-1 text-text-secondary capitalize"
             size="sm"
           >
             <span className="flex items-center gap-1.5">
@@ -186,7 +186,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
                       {profile.email}
                     </p>
                   </div>
-                  
+
                   <Link
                     href="/profile"
                     onClick={() => setDropdownOpen(false)}
@@ -195,7 +195,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
                     <UserIcon className="h-4 w-4 text-text-tertiary" />
                     <span>My Profile</span>
                   </Link>
-                  
+
                   {["exco", "super_admin"].includes(profile.role) && (
                     <Link
                       href="/admin/settings"
@@ -206,9 +206,9 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
                       <span>Admin Settings</span>
                     </Link>
                   )}
-                  
+
                   <div className="my-1 border-t border-neutrals-borderLight" />
-                  
+
                   <button
                     onClick={handleLogout}
                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] text-danger hover:bg-rose-50 transition-colors"

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -41,7 +41,7 @@
   --destructive-foreground: var(--white);
 
   --border: #e5e7eb;
-  --input: #e5e7eb;
+  --input: #0a101d;
   --ring: var(--indigo-velvet);
 
   /* Theme variables mapping to Shadcn variables */
@@ -159,12 +159,135 @@
 }
 
 /* ============================================================
-   Dark Mode — both .dark class (manual toggle) AND system pref
+   Dark Mode — .dark class (manual toggle)
    ============================================================ */
-.dark,
+.dark {
+  /* Standard Shadcn CSS variables (Dark Mode) */
+  --background: var(--prussian-blue);
+  --foreground: #f9fafb;
+
+  --card: var(--prussian-blue-2);
+  --card-foreground: #f9fafb;
+
+  --popover: var(--prussian-blue-2);
+  --popover-foreground: #f9fafb;
+
+  --primary: var(--indigo-velvet);
+  --primary-foreground: var(--white);
+
+  --secondary: #0c0e1a;
+  --secondary-foreground: #f9fafb;
+
+  --muted: #292d4b;
+  --muted-foreground: #9ca3af;
+
+  --accent: var(--brick-ember);
+  --accent-foreground: var(--white);
+
+  --destructive: var(--brick-ember);
+  --destructive-foreground: var(--white);
+
+  --border: #16182c;
+  --input: #16182c;
+  --ring: var(--indigo-velvet);
+
+  /* Custom overrides for specific variables that need darker variants */
+  --brand-default: #7c5dfa;
+  --brand-accent: #9075fc;
+  --brand-dark: #6646e5;
+  --brand-light: #1c1538;
+  --brand-border: #3b2c75;
+  --brand-orange: var(--amber-honey);
+
+  --danger: #ef4444;
+
+  /* Status Colors */
+  --success-bg: #092f1b;
+  --success-text: var(--jade-green);
+  --success-border: #0e5e33;
+
+  --warning-bg: #2d1f05;
+  --warning-text: var(--amber-honey);
+  --warning-border: #5f3e09;
+
+  --error-bg: #2f0d0e;
+  --error-text: var(--brick-ember);
+  --error-border: #621417;
+
+  --info-bg: #0b1e3b;
+  --info-text: #60a5fa;
+  --info-border: #143564;
+
+  --pending-bg: #2d2605;
+  --pending-text: var(--amber-honey);
+  --pending-border: #5f5209;
+
+  /* Role Accents */
+  --role-student: #60a5fa;
+  --role-student-bg: #0b2545;
+  --role-alumnus: #a78bfa;
+  --role-alumnus-bg: #1e1236;
+  --role-exco: var(--jade-green);
+  --role-exco-bg: #092f1b;
+  --role-superadmin: #f87171;
+  --role-superadmin-bg: #2f0d0e;
+
+  /* Note Cards */
+  --note-green: #0e5e33;
+  --note-green-surface: #0a4727;
+  --note-green-text: #a7f3d0;
+  --note-green-subtext: #86efac;
+  --note-green-meta: #34d399;
+
+  --note-purple: #4c1d95;
+  --note-purple-surface: #3b0764;
+  --note-purple-text: #ddd6fe;
+  --note-purple-subtext: #c084fc;
+  --note-purple-meta: #a78bfa;
+
+  --note-amber: #78350f;
+  --note-amber-text: #fde68a;
+  --note-amber-subtext: #fcd34d;
+
+  --note-blue: #1e3a8a;
+  --note-blue-text: #bfdbfe;
+
+  /* Task Status */
+  --task-inprogress-bg: #3c2f0f;
+  --task-inprogress-text: #fde68a;
+  --task-todo-bg: #172554;
+  --task-todo-text: #bfdbfe;
+  --task-done-bg: #064e3b;
+  --task-done-text: #a7f3d0;
+  --task-overdue-bg: #450a0a;
+  --task-overdue-text: #fca5a5;
+
+  /* Inline color overrides — dark versions */
+  --emerald-50: #092f1b;
+  --emerald-100: #064e3b;
+  --emerald-600: #34d399;
+  --emerald-700: #6ee7b7;
+  --amber-50: #2d1f05;
+  --amber-100: #3c2f0f;
+  --amber-600: #fbbf24;
+  --rose-50: #2f0d0e;
+  --indigo-50: #1e1b4b;
+  --indigo-700: #a5b4fc;
+  --blue-50: #0b1e3b;
+  --blue-700: #60a5fa;
+  --purple-50: #1e1236;
+  --purple-700: #c084fc;
+  --gray-50: #0c0e1a;
+  --gray-100: #16182c;
+  --gray-200: #1e2035;
+  --gray-700: #9ca3af;
+}
+
+/* ============================================================
+   Dark Mode — system preference
+   ============================================================ */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Standard Shadcn CSS variables (Dark Mode) */
     --background: var(--prussian-blue);
     --foreground: #f9fafb;
 
@@ -193,7 +316,6 @@
     --input: #16182c;
     --ring: var(--indigo-velvet);
 
-    /* Custom overrides for specific variables that need darker variants */
     --brand-default: #7c5dfa;
     --brand-accent: #9075fc;
     --brand-dark: #6646e5;
@@ -203,7 +325,6 @@
 
     --danger: #ef4444;
 
-    /* Status Colors */
     --success-bg: #092f1b;
     --success-text: var(--jade-green);
     --success-border: #0e5e33;
@@ -224,7 +345,6 @@
     --pending-text: var(--amber-honey);
     --pending-border: #5f5209;
 
-    /* Role Accents */
     --role-student: #60a5fa;
     --role-student-bg: #0b2545;
     --role-alumnus: #a78bfa;
@@ -234,7 +354,6 @@
     --role-superadmin: #f87171;
     --role-superadmin-bg: #2f0d0e;
 
-    /* Note Cards */
     --note-green: #0e5e33;
     --note-green-surface: #0a4727;
     --note-green-text: #a7f3d0;
@@ -254,7 +373,6 @@
     --note-blue: #1e3a8a;
     --note-blue-text: #bfdbfe;
 
-    /* Task Status */
     --task-inprogress-bg: #3c2f0f;
     --task-inprogress-text: #fde68a;
     --task-todo-bg: #172554;
@@ -264,7 +382,6 @@
     --task-overdue-bg: #450a0a;
     --task-overdue-text: #fca5a5;
 
-    /* Inline color overrides — dark versions */
     --emerald-50: #092f1b;
     --emerald-100: #064e3b;
     --emerald-600: #34d399;
@@ -365,15 +482,7 @@
 
 /* ============================================================
    Dark mode overrides for hardcoded utility classes
-   (applies to both manual .dark and system dark preference)
    ============================================================ */
-.dark .bg-white,
-@media (prefers-color-scheme: dark) {
-  .bg-white {
-    background-color: var(--card) !important;
-  }
-}
-
 .dark .bg-white {
   background-color: var(--card) !important;
 }
@@ -540,7 +649,7 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+  font-family: "Inter", "DM Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -556,17 +665,19 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border, #E5E7EB);
+  background: var(--border, #e5e7eb);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground, #D1D5DB);
+  background: var(--muted-foreground, #d1d5db);
 }
 
 /* Theme transition for smooth dark/light switching */
 html {
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Recharts overrides for dark mode */
