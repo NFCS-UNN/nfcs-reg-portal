@@ -78,6 +78,12 @@ function isPlaceholderValue(value?: string) {
   );
 }
 
+function assertUsableCredential(value: string | undefined, label: string): asserts value is string {
+  if (isPlaceholderValue(value)) {
+    throw missingCredentialsError(label);
+  }
+}
+
 function summarizeEnvValue(name: string, value?: string) {
   return {
     name,
@@ -148,9 +154,8 @@ export async function createOPayOrder(params: OPayOrderParams): Promise<OPayOrde
   const country = readEnv("OPAY_COUNTRY") || "NG";
   const currency = readEnv("OPAY_CURRENCY") || "NGN";
 
-  if (isPlaceholderValue(merchantId) || isPlaceholderValue(publicKey)) {
-    throw missingCredentialsError("Merchant ID or Public Key");
-  }
+  assertUsableCredential(merchantId, "Merchant ID");
+  assertUsableCredential(publicKey, "Public Key");
 
   if (!appUrl) {
     throw new Error("Missing NEXT_PUBLIC_APP_URL. OPay needs this for returnUrl and callbackUrl.");
@@ -235,9 +240,8 @@ export async function queryOPayStatus(reference: string) {
   const secretKey = getOPaySecretKey();
   const country = readEnv("OPAY_COUNTRY") || "NG";
 
-  if (isPlaceholderValue(merchantId) || isPlaceholderValue(secretKey)) {
-    throw missingCredentialsError("Merchant ID or OPAY_SECRET_KEY/OPAY_PRIVATE_KEY");
-  }
+  assertUsableCredential(merchantId, "Merchant ID");
+  assertUsableCredential(secretKey, "OPAY_SECRET_KEY/OPAY_PRIVATE_KEY");
 
   const payload = {
     reference,
