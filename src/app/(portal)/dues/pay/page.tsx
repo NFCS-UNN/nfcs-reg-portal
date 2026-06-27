@@ -27,6 +27,7 @@ import {
   isFullyPaid,
   isRequiredDuesType,
 } from "@/lib/utils/fees";
+import { formatAmountInput, formatNaira, parseMoneyAmount } from "@/lib/utils/money";
 
 type PaymentRecord = {
   id: string;
@@ -140,7 +141,7 @@ function PayDuesFormContent() {
 
   // Default amount
   const defaultAmount = !userIsAlumnus && isRequiredDuesType(defaultDuesType) && feeBreakdown
-      ? feeBreakdown.total.toString()
+      ? formatAmountInput(feeBreakdown.total.toString())
       : "";
 
   const {
@@ -163,28 +164,36 @@ function PayDuesFormContent() {
   const watchedDuesType = watch("dues_type");
   const watchedAmount = watch("amount");
   const selectedIsRequired = !userIsAlumnus && isRequiredDuesType(watchedDuesType);
+  const previousDuesTypeRef = React.useRef<PaymentFormValues["dues_type"] | undefined>(
+    defaultDuesType as PaymentFormValues["dues_type"],
+  );
 
   // Recalculate amount when dues type changes (for students)
   React.useEffect(() => {
+    const duesTypeChanged = previousDuesTypeRef.current !== watchedDuesType;
+
     if (!userIsAlumnus && feeBreakdown) {
       if (watchedDuesType === "membership_levy" || watchedDuesType === "annual_dues") {
         const requiredAmount = feeBreakdown.total.toString();
-        if (watchedAmount !== requiredAmount) {
-          setValue("amount", requiredAmount);
+        const formattedRequiredAmount = formatAmountInput(requiredAmount);
+        if (watchedAmount !== formattedRequiredAmount) {
+          setValue("amount", formattedRequiredAmount);
         }
-      } else {
+      } else if (duesTypeChanged) {
         if (watchedAmount !== "") {
           setValue("amount", "");
         }
       }
     }
+
+    previousDuesTypeRef.current = watchedDuesType;
   }, [watchedAmount, watchedDuesType, feeBreakdown, userIsAlumnus, setValue]);
 
   // Prefill when profile loads
   React.useEffect(() => {
     if (profile && !isPaymentsLoading) {
       const newAmount = !userIsAlumnus && isRequiredDuesType(defaultDuesType) && feeBreakdown
-          ? feeBreakdown.total.toString()
+          ? formatAmountInput(feeBreakdown.total.toString())
           : "";
 
       reset({
@@ -202,7 +211,7 @@ function PayDuesFormContent() {
 
     try {
       const response = await initiateOPayPayment({
-        amount: parseFloat(values.amount),
+        amount: parseMoneyAmount(values.amount),
         dues_type: values.dues_type,
         payment_period: values.payment_period,
         notes: values.notes,
@@ -316,16 +325,16 @@ function PayDuesFormContent() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-white/60 rounded-md p-2">
                   <p className="text-[10px] text-text-tertiary">Annual Dues</p>
-                  <p className="text-sm font-bold text-text-primary font-mono">₦{feeBreakdown.annualDues}</p>
+                  <p className="text-sm font-bold text-text-primary font-mono">{formatNaira(feeBreakdown.annualDues)}</p>
                 </div>
                 <div className="bg-white/60 rounded-md p-2">
                   <p className="text-[10px] text-text-tertiary">Constitution</p>
-                  <p className="text-sm font-bold text-text-primary font-mono">₦{feeBreakdown.constitution}</p>
+                  <p className="text-sm font-bold text-text-primary font-mono">{formatNaira(feeBreakdown.constitution)}</p>
                 </div>
                 <div className="bg-white/60 rounded-md p-2">
                   <p className="text-[10px] text-text-tertiary">CGAN</p>
                   <p className="text-sm font-bold text-text-primary font-mono">
-                    ₦{feeBreakdown.cgan}
+                    {formatNaira(feeBreakdown.cgan)}
                     {feeBreakdown.isFinalistYear && (
                       <Badge variant="pending" className="ml-1.5 text-[8px] py-0">Finalist</Badge>
                     )}
@@ -333,7 +342,7 @@ function PayDuesFormContent() {
                 </div>
                 <div className="bg-brand/5 rounded-md p-2 border border-brand-border">
                   <p className="text-[10px] text-brand-accent font-semibold">Total</p>
-                  <p className="text-sm font-bold text-brand font-mono">₦{feeBreakdown.total}</p>
+                  <p className="text-sm font-bold text-brand font-mono">{formatNaira(feeBreakdown.total)}</p>
                 </div>
               </div>
             </div>
@@ -363,7 +372,11 @@ function PayDuesFormContent() {
               <label className="text-xs font-semibold text-text-secondary">Amount to Pay (₦)</label>
               <Input
                 error={!!errors.amount}
-                {...register("amount")}
+                {...register("amount", {
+                  onChange: (event) => {
+                    event.target.value = formatAmountInput(event.target.value);
+                  },
+                })}
                 placeholder="5000"
                 disabled={isLoading}
                 readOnly={selectedIsRequired}

@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { isValidMoneyAmount } from "@/lib/utils/money";
 
 export const DUES_TYPES = ["membership_levy", "annual_dues", "special_levy", "other"] as const;
 
 export const paymentSchema = z.object({
-  amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-    message: "Amount must be a positive number",
+  amount: z.string().refine((val) => isValidMoneyAmount(val), {
+    message: "Enter a valid amount greater than zero",
   }),
   dues_type: z.enum(DUES_TYPES, { message: "Please select a dues type" }),
   payment_period: z.string().min(4, "Session label is required (e.g. 2024/2025 Session)"),

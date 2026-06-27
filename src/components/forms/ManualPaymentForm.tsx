@@ -12,16 +12,17 @@ import { createClient } from "@/lib/supabase/client";
 import { AlertCircle, CheckCircle, Search, User, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/hooks/useUser";
+import { formatAmountInput, formatNaira } from "@/lib/utils/money";
 
 // Year fee breakdown (matching the fee engine)
 const DUES_YEARS: { label: string; value: string; total: number; breakdown: string; type: "membership_levy" | "annual_dues" | "special_levy" | "other" }[] = [
-  { label: "1st Year (Membership Levy)", value: "year_1", total: 500, breakdown: "₦250 dues + ₦150 const + ₦100 CGAN", type: "membership_levy" },
-  { label: "2nd Year", value: "year_2", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
-  { label: "3rd Year", value: "year_3", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
-  { label: "4th Year (Non-finalist)", value: "year_4", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
-  { label: "4th Year (Finalist)", value: "year_4f", total: 500, breakdown: "₦250 dues + ₦50 const + ₦200 CGAN", type: "annual_dues" },
-  { label: "5th Year", value: "year_5", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN", type: "annual_dues" },
-  { label: "6th Year (Finalist)", value: "year_6", total: 300, breakdown: "₦250 dues + ₦50 const + ₦0 CGAN", type: "annual_dues" },
+  { label: "1st Year (Membership Levy)", value: "year_1", total: 500, breakdown: `${formatNaira(250)} dues + ${formatNaira(150)} const + ${formatNaira(100)} CGAN`, type: "membership_levy" },
+  { label: "2nd Year", value: "year_2", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN`, type: "annual_dues" },
+  { label: "3rd Year", value: "year_3", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN`, type: "annual_dues" },
+  { label: "4th Year (Non-finalist)", value: "year_4", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN`, type: "annual_dues" },
+  { label: "4th Year (Finalist)", value: "year_4f", total: 500, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(200)} CGAN`, type: "annual_dues" },
+  { label: "5th Year", value: "year_5", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN`, type: "annual_dues" },
+  { label: "6th Year (Finalist)", value: "year_6", total: 300, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(0)} CGAN`, type: "annual_dues" },
 ];
 
 /** Generate a random invoice number in format REC-XXXXXX */
@@ -147,7 +148,7 @@ export function ManualPaymentForm() {
     setSelectedDuesYear(yearVal);
     const info = DUES_YEARS.find((d) => d.value === yearVal);
     if (info) {
-      setValue("amount", String(info.total));
+      setValue("amount", formatAmountInput(String(info.total)));
       setValue("dues_type", info.type);
     }
   };
@@ -307,20 +308,28 @@ export function ManualPaymentForm() {
               <option value="">Select academic year...</option>
               {DUES_YEARS.map((y) => (
                 <option key={y.value} value={y.value}>
-                  {y.label} — ₦{y.total}
+                  {y.label} — {formatNaira(y.total)}
                 </option>
               ))}
             </select>
             {selectedDuesInfo && (
               <p className="text-[11px] text-text-tertiary mt-1">
-                {selectedDuesInfo.breakdown} = <span className="font-bold text-text-primary">₦{selectedDuesInfo.total}</span>
+                {selectedDuesInfo.breakdown} = <span className="font-bold text-text-primary">{formatNaira(selectedDuesInfo.total)}</span>
               </p>
             )}
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-text-secondary">Amount (₦) <span className="text-text-tertiary font-normal">— auto-filled</span></label>
-            <Input error={!!errors.amount} {...register("amount")} placeholder="auto-filled from year selection" />
+            <Input
+              error={!!errors.amount}
+              {...register("amount", {
+                onChange: (event) => {
+                  event.target.value = formatAmountInput(event.target.value);
+                },
+              })}
+              placeholder="auto-filled from year selection"
+            />
             {errors.amount && <p className="text-[11px] text-danger mt-1">{errors.amount.message}</p>}
           </div>
         </div>

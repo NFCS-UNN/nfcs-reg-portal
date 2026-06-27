@@ -13,16 +13,17 @@ import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/hooks/useUser";
 import { ORGANS } from "@/lib/validations/member.schema";
 import { UNN_CAMPUS_DATA } from "@/lib/utils/unn-data";
+import { formatAmountInput, formatNaira } from "@/lib/utils/money";
 
 // Year fee breakdown (matching the fee engine)
 const DUES_YEARS = [
-  { label: "1st Year (Membership Levy)", value: "year_1", total: 500, breakdown: "₦250 dues + ₦150 const + ₦100 CGAN" },
-  { label: "2nd Year", value: "year_2", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
-  { label: "3rd Year", value: "year_3", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
-  { label: "4th Year (Non-finalist)", value: "year_4", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
-  { label: "4th Year (Finalist)", value: "year_4f", total: 500, breakdown: "₦250 dues + ₦50 const + ₦200 CGAN" },
-  { label: "5th Year", value: "year_5", total: 400, breakdown: "₦250 dues + ₦50 const + ₦100 CGAN" },
-  { label: "6th Year (Finalist)", value: "year_6", total: 300, breakdown: "₦250 dues + ₦50 const + ₦0 CGAN" },
+  { label: "1st Year (Membership Levy)", value: "year_1", total: 500, breakdown: `${formatNaira(250)} dues + ${formatNaira(150)} const + ${formatNaira(100)} CGAN` },
+  { label: "2nd Year", value: "year_2", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN` },
+  { label: "3rd Year", value: "year_3", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN` },
+  { label: "4th Year (Non-finalist)", value: "year_4", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN` },
+  { label: "4th Year (Finalist)", value: "year_4f", total: 500, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(200)} CGAN` },
+  { label: "5th Year", value: "year_5", total: 400, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(100)} CGAN` },
+  { label: "6th Year (Finalist)", value: "year_6", total: 300, breakdown: `${formatNaira(250)} dues + ${formatNaira(50)} const + ${formatNaira(0)} CGAN` },
 ];
 
 export function MigrateForm() {
@@ -81,7 +82,7 @@ export function MigrateForm() {
     setSelectedDuesYear(yearVal);
     const info = DUES_YEARS.find((d) => d.value === yearVal);
     if (info) {
-      setValue("dues_amount_paid", String(info.total));
+      setValue("dues_amount_paid", formatAmountInput(String(info.total)));
     }
   };
 
@@ -255,13 +256,13 @@ export function MigrateForm() {
                 <option value="">Select academic year...</option>
                 {DUES_YEARS.map((y) => (
                   <option key={y.value} value={y.value}>
-                    {y.label} — ₦{y.total}
+                    {y.label} — {formatNaira(y.total)}
                   </option>
                 ))}
               </select>
               {selectedDuesInfo && (
                 <p className="text-[11px] text-text-tertiary mt-1">
-                  {selectedDuesInfo.breakdown} = <span className="font-bold text-text-primary">₦{selectedDuesInfo.total}</span>
+                  {selectedDuesInfo.breakdown} = <span className="font-bold text-text-primary">{formatNaira(selectedDuesInfo.total)}</span>
                 </p>
               )}
             </div>
@@ -271,7 +272,11 @@ export function MigrateForm() {
               <label className="text-xs font-semibold text-text-secondary">Amount Paid (₦) <span className="text-text-tertiary font-normal">— auto-filled</span></label>
               <Input
                 error={!!errors.dues_amount_paid}
-                {...register("dues_amount_paid")}
+                {...register("dues_amount_paid", {
+                  onChange: (event) => {
+                    event.target.value = formatAmountInput(event.target.value);
+                  },
+                })}
                 placeholder="auto-filled from year selection"
               />
               {errors.dues_amount_paid && <p className="text-[11px] text-danger mt-1 font-medium">{errors.dues_amount_paid.message}</p>}

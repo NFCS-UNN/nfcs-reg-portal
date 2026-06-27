@@ -6,6 +6,7 @@ import type { ManualPaymentFormValues } from "@/lib/validations/payment.schema";
 import { revalidatePath } from "next/cache";
 import { sendEmail } from "@/lib/email";
 import DuesReceipt from "../../../emails/DuesReceipt";
+import { parseMoneyAmount } from "@/lib/utils/money";
 import * as React from "react";
 
 /** Fetch a single payment by reference — uses adminClient to bypass RLS join issues in checkout */
@@ -268,12 +269,14 @@ export async function recordManualPayment(values: ManualPaymentFormValues, excoI
       }
     }
 
+    const amount = parseMoneyAmount(values.amount);
+
     const { data: payment, error } = await adminClient
       .from("payments")
       .insert({
         profile_id,
         legacy_member_id,
-        amount: parseFloat(values.amount),
+        amount,
         dues_type: values.dues_type,
         channel: "manual",
         status: "confirmed",
@@ -299,7 +302,7 @@ export async function recordManualPayment(values: ManualPaymentFormValues, excoI
       target_id: payment.id,
       metadata: {
         member_id: values.member_id,
-        amount: values.amount,
+        amount,
       },
     });
 

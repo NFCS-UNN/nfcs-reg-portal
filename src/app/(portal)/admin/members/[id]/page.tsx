@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils/date";
+import { formatNaira } from "@/lib/utils/money";
 import { MemberProfileEditor } from "./MemberProfileEditor";
 
 function getStatusBadgeVariant(status: string) {
@@ -315,7 +316,7 @@ export default async function MemberDetailPage({ params }: PageProps) {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-bold text-text-primary">
-                          ₦{Number(payment.amount).toLocaleString()}
+                          {formatNaira(payment.amount)}
                         </span>
                         <Badge
                           variant={payment.status === "confirmed" ? "active" : payment.status === "pending" ? "pending" : "unpaid"}

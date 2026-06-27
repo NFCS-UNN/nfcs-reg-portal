@@ -3,8 +3,9 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserCheck, AlertCircle, TrendingUp, DollarSign } from "lucide-react";
+import { Users, UserCheck, AlertCircle, DollarSign } from "lucide-react";
 import { groupByMonth } from "@/lib/utils/date";
+import { formatNaira } from "@/lib/utils/money";
 import {
   BarChart,
   Bar,
@@ -77,12 +78,12 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <Card hoverable>
-          <CardContent className="p-5 flex items-center gap-4 justify-between">
-            <div className="space-y-1">
+      <div className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Card hoverable className="min-w-0 overflow-hidden">
+          <CardContent className="flex min-w-0 items-center justify-between gap-4 p-5">
+            <div className="min-w-0 space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Total Members</span>
               <h3 className="text-2xl font-bold text-text-primary">{adminStats.totalMembers}</h3>
             </div>
@@ -92,9 +93,9 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
           </CardContent>
         </Card>
 
-        <Card hoverable>
-          <CardContent className="p-5 flex items-center gap-4 justify-between">
-            <div className="space-y-1">
+        <Card hoverable className="min-w-0 overflow-hidden">
+          <CardContent className="flex min-w-0 items-center justify-between gap-4 p-5">
+            <div className="min-w-0 space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Active Members</span>
               <h3 className="text-2xl font-bold text-text-primary">{adminStats.activeMembers}</h3>
             </div>
@@ -104,11 +105,11 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
           </CardContent>
         </Card>
 
-        <Card hoverable>
-          <CardContent className="p-5 flex items-center gap-4 justify-between">
-            <div className="space-y-1 flex flex-col">
+        <Card hoverable className="min-w-0 overflow-hidden">
+          <CardContent className="flex min-w-0 items-center justify-between gap-4 p-5">
+            <div className="flex min-w-0 flex-col space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Pending Approvals</span>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <h3 className="text-2xl font-bold text-text-primary">{adminStats.pendingApprovals}</h3>
                 {adminStats.pendingApprovals > 0 && (
                   <Badge variant="pending" className="text-[10px] px-1.5 py-0 border-none">Needs review</Badge>
@@ -121,12 +122,12 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
           </CardContent>
         </Card>
 
-        <Card hoverable>
-          <CardContent className="p-5 flex items-center gap-4 justify-between">
-            <div className="space-y-1">
+        <Card hoverable className="min-w-0 overflow-hidden">
+          <CardContent className="flex min-w-0 items-center justify-between gap-4 p-5">
+            <div className="min-w-0 space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Total Amount Collected</span>
-              <h3 className="text-2xl font-bold text-text-primary">
-                ₦{adminStats.totalCollected.toLocaleString()}
+              <h3 className="break-words text-xl font-bold text-text-primary sm:text-2xl">
+                {formatNaira(adminStats.totalCollected)}
               </h3>
             </div>
             <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700">
@@ -138,42 +139,42 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
 
       {/* Additional Financial Breakdown (Online vs Manual) */}
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+        <div className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl border border-neutrals-borderLight bg-white p-4 shadow-sm dark:bg-prussian-blue-2">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Online Payments</span>
-            <span className="text-xl font-bold text-text-primary">₦{adminStats.onlineCollected.toLocaleString()}</span>
+            <span className="break-words text-xl font-bold text-text-primary">{formatNaira(adminStats.onlineCollected)}</span>
           </div>
-          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+          <div className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl border border-neutrals-borderLight bg-white p-4 shadow-sm dark:bg-prussian-blue-2">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Manual Receipts</span>
-            <span className="text-xl font-bold text-text-primary">₦{adminStats.manualCollected.toLocaleString()}</span>
+            <span className="break-words text-xl font-bold text-text-primary">{formatNaira(adminStats.manualCollected)}</span>
           </div>
-          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+          <div className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl border border-neutrals-borderLight bg-white p-4 shadow-sm dark:bg-prussian-blue-2">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Pending / Failed Dues</span>
             <span className="text-xl font-bold text-text-primary">{adminStats.pendingCount} transactions</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+        <div className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl border border-neutrals-borderLight bg-white p-4 shadow-sm dark:bg-prussian-blue-2">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Dues Collected (Registration &amp; Annual Dues)</span>
-            <span className="text-xl font-bold text-brand">₦{adminStats.duesCollected.toLocaleString()}</span>
+            <span className="break-words text-xl font-bold text-brand">{formatNaira(adminStats.duesCollected)}</span>
           </div>
-          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+          <div className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-xl border border-neutrals-borderLight bg-white p-4 shadow-sm dark:bg-prussian-blue-2">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Other Payments Collected (Special Levies &amp; Others)</span>
-            <span className="text-xl font-bold text-emerald-600">₦{adminStats.otherCollected.toLocaleString()}</span>
+            <span className="break-words text-xl font-bold text-emerald-600">{formatNaira(adminStats.otherCollected)}</span>
           </div>
         </div>
       </div>
 
       {/* Analytics Charts */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {/* Dues Collection Trend */}
-        <Card className="xl:col-span-2">
+        <Card className="min-w-0 overflow-hidden xl:col-span-2">
           <CardHeader>
             <CardTitle>Dues Collection Trend</CardTitle>
             <CardDescription>Revenue over the last 6 months</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] pt-4">
+          <CardContent className="h-[300px] min-w-0 overflow-hidden pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={duesCollectionData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -182,10 +183,10 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
                   tickLine={false}
                   axisLine={false}
                   fontSize={12}
-                  tickFormatter={(val) => `₦${val.toLocaleString()}`}
+                  tickFormatter={(val) => formatNaira(Number(val))}
                 />
                 <Tooltip
-                  formatter={(val: any) => [`₦${Number(val).toLocaleString()}`, "Amount"]}
+                  formatter={(val: unknown) => [formatNaira(Number(val)), "Amount"]}
                   cursor={{ fill: "transparent" }}
                 />
                 <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} />
@@ -195,12 +196,12 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
         </Card>
 
         {/* Member Status Distribution */}
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Member Status</CardTitle>
             <CardDescription>Current state of the directory</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center pt-4">
+          <CardContent className="relative flex h-[300px] min-w-0 items-center justify-center overflow-hidden pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -220,7 +221,7 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
               </PieChart>
             </ResponsiveContainer>
             {/* Custom Legend */}
-            <div className="absolute bottom-6 w-full flex justify-center gap-4 text-xs font-semibold">
+            <div className="absolute bottom-6 left-0 flex w-full flex-wrap justify-center gap-3 px-3 text-xs font-semibold">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Active
               </div>
@@ -235,12 +236,12 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
         </Card>
 
         {/* Member Growth Chart */}
-        <Card className="xl:col-span-3">
+        <Card className="min-w-0 overflow-hidden xl:col-span-3">
           <CardHeader>
             <CardTitle>Member Registration Growth</CardTitle>
             <CardDescription>New registrations over the last 6 months</CardDescription>
           </CardHeader>
-          <CardContent className="h-[300px] pt-4">
+          <CardContent className="h-[300px] min-w-0 overflow-hidden pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={memberGrowthData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />

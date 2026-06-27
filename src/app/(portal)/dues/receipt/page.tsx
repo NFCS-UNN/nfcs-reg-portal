@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Receipt, Eye, Printer, ExternalLink, ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { formatNaira } from "@/lib/utils/money";
 
 function getStatusVariant(status: string) {
   switch (status) {
@@ -134,9 +135,7 @@ export default async function AllReceiptsPage() {
                     </TableCell>
 
                     <TableCell variant="mono" className="font-semibold text-text-primary">
-                      ₦{parseFloat(p.amount.toString()).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatNaira(p.amount)}
                     </TableCell>
 
                     <TableCell variant="secondary">

@@ -5,6 +5,7 @@ import type { MigrationFormValues } from "@/lib/validations/migration.schema";
 import { revalidatePath } from "next/cache";
 import { sendEmail } from "@/lib/email";
 import ClaimAccountInvite from "../../../emails/ClaimAccountInvite";
+import { parseMoneyAmount } from "@/lib/utils/money";
 import * as React from "react";
 
 // Manual migrate single member
@@ -56,8 +57,8 @@ export async function migrateLegacyMember(values: MigrationFormValues, excoId: s
 
     // 2. If dues exist, insert into payments
     if (dues_amount_paid && legacyData) {
-      const amount = parseFloat(dues_amount_paid);
-      if (!isNaN(amount) && amount > 0) {
+      const amount = parseMoneyAmount(dues_amount_paid);
+      if (Number.isFinite(amount) && amount > 0) {
         const { error: paymentError } = await adminClient.from("payments").insert({
           legacy_member_id: legacyData.id,
           profile_id: null,
@@ -140,8 +141,8 @@ export async function bulkMigrateLegacyMembers(rows: any[], excoId: string) {
 
       // Dues record
       if (row.dues_amount_paid && legacyData) {
-        const amount = parseFloat(row.dues_amount_paid);
-        if (!isNaN(amount) && amount > 0) {
+        const amount = parseMoneyAmount(row.dues_amount_paid);
+        if (Number.isFinite(amount) && amount > 0) {
           await adminClient.from("payments").insert({
             legacy_member_id: legacyData.id,
             profile_id: null,
@@ -488,4 +489,3 @@ export async function updateLegacyMember(id: string, values: Partial<MigrationFo
     return { error: err?.message || "Failed to update legacy member" };
   }
 }
-

@@ -11,12 +11,9 @@ import {
   TrendingUp,
   UserCheck,
   Megaphone,
-  Sparkles,
   FolderSync,
   User,
-  Activity,
   ShieldAlert,
-  Clock,
   DollarSign,
 } from "lucide-react";
 import Link from "next/link";
@@ -28,6 +25,7 @@ import {
   CURRENT_SESSION,
 } from "@/lib/utils/fees";
 import { getYearsOfStudy } from "@/lib/utils/unn-data";
+import { formatNaira } from "@/lib/utils/money";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -191,11 +189,11 @@ export default async function DashboardPage() {
     .reduce((sum, s) => sum + s.breakdown.total, 0);
 
   const memberStats = {
-    duesPaid: `₦${duesPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-    otherPaid: `₦${otherPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    duesPaid: formatNaira(duesPaidAmount),
+    otherPaid: formatNaira(otherPaidAmount),
     outstanding: outstandingAmount > 0
-      ? `₦${outstandingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-      : "₦0.00",
+      ? formatNaira(outstandingAmount)
+      : formatNaira(0),
     session: CURRENT_SESSION,
     eventsCount: eventsCount || 0,
     announcementsCount: announcementsCount || 0,
@@ -215,7 +213,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6 overflow-x-hidden">
       {/* Pending Account Alert Note Card */}
       {profile.status === "pending" && (
         <div className="flex gap-4 p-5 rounded-[12px] bg-status-pendingBackground border border-status-pendingBorder text-status-pendingText animate-in fade-in duration-300">
@@ -307,7 +305,7 @@ export default async function DashboardPage() {
             <CardContent className="p-5 flex items-center gap-4 justify-between">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-text-secondary">Dues Collected</span>
-                <h3 className="text-2xl font-bold text-text-primary">₦{adminStats.totalCollected.toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-text-primary">{formatNaira(adminStats.totalCollected)}</h3>
               </div>
               <div className="h-10 w-10 rounded-lg bg-brand-light flex items-center justify-center text-brand-accent">
                 <TrendingUp className="h-5 w-5" />

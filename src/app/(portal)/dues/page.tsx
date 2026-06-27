@@ -36,6 +36,7 @@ import {
   getPayableRequiredSession,
   type PaymentSession,
 } from "@/lib/utils/fees";
+import { formatNaira } from "@/lib/utils/money";
 
 function getPaymentStatusVariant(status: string) {
   switch (status) {
@@ -134,11 +135,11 @@ function TrackerStep({
 
             {/* Fee Breakdown */}
             <div className="flex items-center gap-3 text-[10px] text-text-tertiary">
-              <span>Dues: ₦{session.breakdown.annualDues}</span>
+              <span>Dues: {formatNaira(session.breakdown.annualDues)}</span>
               <span>·</span>
-              <span>Constitution: ₦{session.breakdown.constitution}</span>
+              <span>Constitution: {formatNaira(session.breakdown.constitution)}</span>
               <span>·</span>
-              <span>CGAN: ₦{session.breakdown.cgan}</span>
+              <span>CGAN: {formatNaira(session.breakdown.cgan)}</span>
               {session.breakdown.isFinalistYear && (
                 <>
                   <span>·</span>
@@ -150,7 +151,7 @@ function TrackerStep({
 
           <div className="flex items-center gap-3">
             <span className="text-base font-bold text-text-primary font-mono">
-              ₦{session.breakdown.total.toLocaleString()}
+              {formatNaira(session.breakdown.total)}
             </span>
 
             {isPaid ? (
@@ -469,11 +470,7 @@ export default async function MyDuesPage() {
                       variant="mono"
                       className="font-semibold text-text-primary"
                     >
-                      ₦
-                      {parseFloat(p.amount.toString()).toLocaleString(
-                        undefined,
-                        { minimumFractionDigits: 2 }
-                      )}
+                      {formatNaira(p.amount)}
                     </TableCell>
 
                     <TableCell variant="secondary">

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { saveDuesConfig } from "@/lib/actions/dues-config.actions";
 import { useToast } from "@/components/ui/toast";
 import { DollarSign, Save } from "lucide-react";
+import { formatNaira } from "@/lib/utils/money";
 
 interface DuesRow {
   id: string | null;
@@ -125,7 +126,7 @@ export function DuesConfigEditor({ initialRows, adminId }: { initialRows: DuesRo
                   </td>
                   <td className="py-3 text-right">
                     <span className="text-sm font-bold text-brand-accent">
-                      ₦{row.total.toLocaleString()}
+                      {formatNaira(row.total)}
                     </span>
                   </td>
                 </tr>

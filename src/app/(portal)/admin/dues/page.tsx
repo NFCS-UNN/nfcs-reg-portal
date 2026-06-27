@@ -6,6 +6,7 @@ import { Plus, CreditCard, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { DuesAnalytics } from "@/components/dues/DuesAnalytics";
 import { DuesTable } from "@/components/dues/DuesTable";
+import { formatNaira } from "@/lib/utils/money";
 
 export default async function AdminDuesPage() {
   const supabase = await createClient();
@@ -87,7 +88,7 @@ export default async function AdminDuesPage() {
             <div className="space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Total Dues Collected</span>
               <h3 className="text-xl font-bold text-brand-accent font-mono">
-                ₦{totalCollected.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatNaira(totalCollected)}
               </h3>
             </div>
             <div className="h-10 w-10 bg-brand-light text-brand rounded-lg flex items-center justify-center">
@@ -101,7 +102,7 @@ export default async function AdminDuesPage() {
             <div className="space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Online Collections</span>
               <h3 className="text-xl font-bold text-text-primary font-mono">
-                ₦{onlineCollected.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatNaira(onlineCollected)}
               </h3>
             </div>
             <div className="h-10 w-10 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center dark:bg-emerald-950/20 dark:text-emerald-500">
@@ -115,7 +116,7 @@ export default async function AdminDuesPage() {
             <div className="space-y-1">
               <span className="text-xs font-semibold text-text-secondary">Manual Collections</span>
               <h3 className="text-xl font-bold text-text-primary font-mono">
-                ₦{manualCollected.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatNaira(manualCollected)}
               </h3>
             </div>
             <div className="h-10 w-10 bg-indigo-50 text-indigo-700 rounded-lg flex items-center justify-center dark:bg-indigo-950/20 dark:text-indigo-500">

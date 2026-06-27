@@ -16,6 +16,7 @@ import {
   Legend,
 } from "recharts";
 import { groupByMonth } from "@/lib/utils/date";
+import { formatNaira } from "@/lib/utils/money";
 
 interface PaymentData {
   amount: number;
@@ -112,10 +113,10 @@ export function DuesAnalytics({ payments }: DuesAnalyticsProps) {
                 tickLine={false}
                 axisLine={false}
                 fontSize={10}
-                tickFormatter={(val) => `₦${val.toLocaleString()}`}
+                tickFormatter={(val) => formatNaira(Number(val))}
               />
               <Tooltip
-                formatter={(val: any) => [`₦${Number(val).toLocaleString()}`, "Revenue"]}
+                formatter={(val: any) => [formatNaira(Number(val)), "Revenue"]}
                 cursor={{ fill: "transparent" }}
               />
               <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} />
@@ -197,7 +198,7 @@ export function DuesAnalytics({ payments }: DuesAnalyticsProps) {
                       />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(val: any) => `₦${Number(val).toLocaleString()}`} />
+                  <Tooltip formatter={(val: any) => formatNaira(Number(val))} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -208,7 +209,7 @@ export function DuesAnalytics({ payments }: DuesAnalyticsProps) {
                   <div key={entry.key} className="flex items-center gap-1.5 text-[10px] font-medium text-text-secondary">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                     <span className="truncate">{entry.name}</span>
-                    <span className="font-mono text-text-primary ml-auto font-bold">₦{entry.value.toLocaleString()}</span>
+                    <span className="font-mono text-text-primary ml-auto font-bold">{formatNaira(entry.value)}</span>
                   </div>
                 );
               })}

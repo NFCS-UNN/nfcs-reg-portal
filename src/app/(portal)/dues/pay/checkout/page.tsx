@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { ShieldCheck, Loader2, Sparkles, XCircle, AlertTriangle } from "lucide-react";
+import { formatNaira } from "@/lib/utils/money";
 
 type CheckoutPayment = {
   id: string;
@@ -282,7 +283,7 @@ function MockCheckoutContent() {
             <div className="flex justify-between items-center p-4 rounded-xl bg-surface-subtle border border-neutrals-border">
               <span className="text-xs font-semibold text-text-secondary">Total Amount</span>
               <span className="text-lg font-bold text-brand-accent font-mono">
-                ₦{parseFloat(payment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatNaira(payment.amount)}
               </span>
             </div>
           </div>

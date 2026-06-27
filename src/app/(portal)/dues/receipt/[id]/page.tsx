@@ -1,11 +1,11 @@
 import * as React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, CheckCircle, Clock, XCircle } from "lucide-react";
 import Link from "next/link";
 import { ReceiptActions } from "./ReceiptActions";
+import { formatNaira } from "@/lib/utils/money";
 
 export default async function ReceiptPage({
   params,
@@ -51,7 +51,6 @@ export default async function ReceiptPage({
 
   const isConfirmed = payment.status === "confirmed";
   const isPending = payment.status === "pending";
-  const isFailed = payment.status === "failed" || payment.status === "reversed";
 
   const statusVariant = isConfirmed ? "paid" : isPending ? "pending" : "unpaid";
   const statusLabel = isConfirmed ? "Confirmed" : isPending ? "Pending" : payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
@@ -262,10 +261,7 @@ export default async function ReceiptPage({
           <div className="flex items-center justify-between py-2">
             <p className="text-sm font-bold text-text-primary">Amount Paid</p>
             <p className="text-xl font-bold text-brand font-mono">
-              ₦
-              {parseFloat(payment.amount.toString()).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-              })}
+              {formatNaira(payment.amount)}
             </p>
           </div>
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ORGANS } from "./member.schema";
+import { isValidMoneyAmount } from "@/lib/utils/money";
 
 export const MIGRATION_SOURCES = ["notebook", "dues_card", "csv_import", "manual_entry"] as const;
 
@@ -16,7 +17,13 @@ export const migrationSchema = z.object({
   parish: z.string().optional().or(z.literal("")),
   migration_source: z.enum(MIGRATION_SOURCES, { message: "Source is required" }),
   notes: z.string().optional().or(z.literal("")),
-  dues_amount_paid: z.string().optional().or(z.literal("")),
+  dues_amount_paid: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || isValidMoneyAmount(val), {
+      message: "Enter a valid amount greater than zero",
+    }),
   dues_period: z.string().optional().or(z.literal("")),
 });
 

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/toast";
 import { formatTimeAgo } from "@/lib/utils/date";
+import { formatNaira } from "@/lib/utils/money";
 import {
   confirmPayment,
   reversePayment,
@@ -413,7 +414,7 @@ export function DuesTable({ initialPayments, currentUserRole }: DuesTableProps) 
 
                     {/* Amount */}
                     <TableCell variant="mono" className="font-semibold text-text-primary">
-                      ₦{parseFloat(p.amount.toString()).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {formatNaira(p.amount)}
                     </TableCell>
 
                     {/* Session Period */}
