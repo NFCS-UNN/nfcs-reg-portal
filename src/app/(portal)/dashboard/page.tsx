@@ -17,10 +17,17 @@ import {
   Activity,
   ShieldAlert,
   Clock,
+  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
 import { AdminAnalytics } from "@/components/dashboard/AdminAnalytics";
 import { DismissibleGreeting } from "@/components/dashboard/DismissibleGreeting";
+import {
+  buildPaymentTracker,
+  getLevelOrdinal,
+  CURRENT_SESSION,
+} from "@/lib/utils/fees";
+import { getYearsOfStudy } from "@/lib/utils/unn-data";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -88,13 +95,15 @@ export default async function DashboardPage() {
   // Payments stats for super-admin
   const { data: allPayments } = isSuperAdmin ? await supabase
     .from("payments")
-    .select("amount, status, channel, created_at")
+    .select("amount, status, channel, created_at, dues_type")
     .order("created_at", { ascending: false }) : { data: null };
 
   let totalCollected = 0;
   let onlineCollected = 0;
   let manualCollected = 0;
   let pendingCount = 0;
+  let duesCollected = 0;
+  let otherCollected = 0;
 
   if (allPayments) {
     allPayments.forEach((p) => {
@@ -103,6 +112,12 @@ export default async function DashboardPage() {
         totalCollected += amount;
         if (p.channel === "online") onlineCollected += amount;
         else if (p.channel === "manual") manualCollected += amount;
+
+        if (["membership_levy", "annual_dues"].includes(p.dues_type)) {
+          duesCollected += amount;
+        } else {
+          otherCollected += amount;
+        }
       } else if (p.status === "pending") {
         pendingCount++;
       }
@@ -130,10 +145,58 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("created_at") : { data: null };
 
+  // ── Student/Alumnus: fetch own payments to compute real dues stats ─────────
+  const { data: myPayments } = (!isExcoOrAbove)
+    ? await supabase
+      .from("payments")
+      .select("id, dues_type, payment_period, status, amount, payment_reference, payment_date, created_at")
+      .eq("profile_id", user.id)
+      .order("created_at", { ascending: false })
+    : { data: null };
+
+  // Build the payment tracker to compute totals
+  const levelOrdinal = getLevelOrdinal(profile.academic_level);
+  const totalCourseYears = getYearsOfStudy(profile.faculty);
+  const tracker = (!isExcoOrAbove && levelOrdinal > 0)
+    ? buildPaymentTracker({
+      currentLevelOrdinal: levelOrdinal,
+      totalCourseYears,
+      existingPayments: (myPayments || []).map((p) => ({
+        id: p.id,
+        dues_type: p.dues_type,
+        payment_period: p.payment_period,
+        status: p.status,
+        amount: p.amount,
+        payment_reference: p.payment_reference,
+        payment_date: p.payment_date,
+        created_at: p.created_at,
+      })),
+      currentSession: CURRENT_SESSION,
+    })
+    : [];
+
+  // Total confirmed Dues Paid (Registration Levy + Annual Dues)
+  const duesPaidAmount = (myPayments || [])
+    .filter((p) => p.status === "confirmed" && ["membership_levy", "annual_dues"].includes(p.dues_type))
+    .reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
+
+  // Total confirmed Other Payments Paid (Special Levies + Other)
+  const otherPaidAmount = (myPayments || [])
+    .filter((p) => p.status === "confirmed" && !["membership_levy", "annual_dues"].includes(p.dues_type))
+    .reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0);
+
+  // Outstanding: sum of fees for sessions that have no confirmed payment
+  const outstandingAmount = tracker
+    .filter((s) => s.existingPayment?.status !== "confirmed")
+    .reduce((sum, s) => sum + s.breakdown.total, 0);
+
   const memberStats = {
-    totalPaid: "₦15,000",
-    outstanding: "₦5,000",
-    session: "2024/2025",
+    duesPaid: `₦${duesPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    otherPaid: `₦${otherPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    outstanding: outstandingAmount > 0
+      ? `₦${outstandingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      : "₦0.00",
+    session: CURRENT_SESSION,
     eventsCount: eventsCount || 0,
     announcementsCount: announcementsCount || 0,
   };
@@ -147,6 +210,8 @@ export default async function DashboardPage() {
     onlineCollected,
     manualCollected,
     pendingCount,
+    duesCollected,
+    otherCollected,
   };
 
   return (
@@ -252,12 +317,12 @@ export default async function DashboardPage() {
         </div>
       ) : (
         // Student/Alumnus KPIs
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Card hoverable>
             <CardContent className="p-5 flex items-center gap-4 justify-between">
               <div className="space-y-1">
-                <span className="text-xs font-semibold text-text-secondary">Dues Paid ({memberStats.session})</span>
-                <h3 className="text-2xl font-bold text-text-primary">{memberStats.totalPaid}</h3>
+                <span className="text-xs font-semibold text-text-secondary">Registration/Dues</span>
+                <h3 className="text-lg font-bold text-text-primary">{memberStats.duesPaid}</h3>
               </div>
               <div className="h-10 w-10 rounded-lg bg-brand-light flex items-center justify-center text-brand">
                 <CreditCard className="h-5 w-5" />
@@ -268,8 +333,20 @@ export default async function DashboardPage() {
           <Card hoverable>
             <CardContent className="p-5 flex items-center gap-4 justify-between">
               <div className="space-y-1">
+                <span className="text-xs font-semibold text-text-secondary">Other Payments</span>
+                <h3 className="text-lg font-bold text-text-primary">{memberStats.otherPaid}</h3>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700">
+                <DollarSign className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card hoverable>
+            <CardContent className="p-5 flex items-center gap-4 justify-between">
+              <div className="space-y-1">
                 <span className="text-xs font-semibold text-text-secondary">Outstanding Levy</span>
-                <h3 className="text-2xl font-bold text-text-primary">{memberStats.outstanding}</h3>
+                <h3 className="text-ld font-bold text-text-primary">{memberStats.outstanding}</h3>
               </div>
               <div className="h-10 w-10 rounded-lg bg-rose-50 flex items-center justify-center text-danger">
                 <AlertCircle className="h-5 w-5" />
@@ -281,7 +358,7 @@ export default async function DashboardPage() {
             <CardContent className="p-5 flex items-center gap-4 justify-between">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-text-secondary">Upcoming Events</span>
-                <h3 className="text-2xl font-bold text-text-primary">{memberStats.eventsCount}</h3>
+                <h3 className="text-lg font-bold text-text-primary">{memberStats.eventsCount}</h3>
               </div>
               <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-700">
                 <Calendar className="h-5 w-5" />
@@ -293,7 +370,7 @@ export default async function DashboardPage() {
             <CardContent className="p-5 flex items-center gap-4 justify-between">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-text-secondary">Announcements</span>
-                <h3 className="text-2xl font-bold text-text-primary">{memberStats.announcementsCount}</h3>
+                <h3 className="text-lg font-bold text-text-primary">{memberStats.announcementsCount}</h3>
               </div>
               <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-700">
                 <Megaphone className="h-5 w-5" />

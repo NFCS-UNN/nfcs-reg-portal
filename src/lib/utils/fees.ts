@@ -41,6 +41,9 @@ export interface PaymentSession {
   };
 }
 
+export const REQUIRED_DUES_TYPES = ["membership_levy", "annual_dues"] as const;
+export type RequiredDuesType = (typeof REQUIRED_DUES_TYPES)[number];
+
 const YEAR_LABELS = [
   "1st Year",
   "2nd Year",
@@ -119,6 +122,20 @@ export function deriveSessionLabel(
   return `${targetStart}/${targetStart + 1}`;
 }
 
+function paymentStatusPriority(status: string) {
+  switch (status) {
+    case "confirmed":
+      return 0;
+    case "pending":
+      return 1;
+    case "failed":
+    case "reversed":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
 /** Build the full payment tracker for a student */
 export function buildPaymentTracker(params: {
   currentLevelOrdinal: number;
@@ -144,11 +161,18 @@ export function buildPaymentTracker(params: {
     const breakdown = calculateFee(yr, totalCourseYears);
     const feeType: "membership_levy" | "annual_dues" = yr === 1 ? "membership_levy" : "annual_dues";
 
-    const matchingPayment = existingPayments.find(
-      (p) =>
-        p.payment_period?.startsWith(sessionLabel) &&
-        (p.dues_type === feeType || (yr === 1 && p.dues_type === "membership_levy"))
-    );
+    const matchingPayment = existingPayments
+      .filter((p) => {
+        if (yr === 1 && p.dues_type === "membership_levy") {
+          return true;
+        }
+
+        return p.payment_period?.startsWith(sessionLabel) && p.dues_type === feeType;
+      })
+      .sort(
+        (a, b) =>
+          paymentStatusPriority(a.status) - paymentStatusPriority(b.status)
+      )[0];
 
     return {
       session: sessionLabel,
@@ -170,11 +194,11 @@ export function buildPaymentTracker(params: {
   });
 }
 
-/** Find the next unpaid/failed session */
+/** Find the next session that is not confirmed yet */
 export function getNextOutstanding(tracker: PaymentSession[]): PaymentSession | null {
   return (
     tracker.find(
-      (s) => !s.existingPayment || ["failed", "reversed"].includes(s.existingPayment.status)
+      (s) => s.existingPayment?.status !== "confirmed"
     ) ?? null
   );
 }
@@ -182,6 +206,40 @@ export function getNextOutstanding(tracker: PaymentSession[]): PaymentSession | 
 /** True if every session has a confirmed payment */
 export function isFullyPaid(tracker: PaymentSession[]): boolean {
   return tracker.length > 0 && tracker.every((s) => s.existingPayment?.status === "confirmed");
+}
+
+export function hasConfirmedRegistrationPayment(tracker: PaymentSession[]): boolean {
+  return tracker.some(
+    (session) =>
+      session.feeType === "membership_levy" &&
+      session.existingPayment?.status === "confirmed"
+  );
+}
+
+export function getPayableRequiredSession(tracker: PaymentSession[]): PaymentSession | null {
+  return getNextOutstanding(tracker);
+}
+
+export function findRequiredSession(params: {
+  tracker: PaymentSession[];
+  duesType: string;
+  paymentPeriod: string;
+}): PaymentSession | null {
+  if (params.duesType === "membership_levy") {
+    return params.tracker.find((session) => session.feeType === "membership_levy") ?? null;
+  }
+
+  return (
+    params.tracker.find(
+      (session) =>
+        session.feeType === params.duesType &&
+        params.paymentPeriod.startsWith(session.session)
+    ) ?? null
+  );
+}
+
+export function isRequiredDuesType(duesType: string): duesType is RequiredDuesType {
+  return REQUIRED_DUES_TYPES.includes(duesType as RequiredDuesType);
 }
 
 export const CURRENT_SESSION = "2024/2025";

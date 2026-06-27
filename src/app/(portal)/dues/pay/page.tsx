@@ -7,7 +7,8 @@ import { paymentSchema, type PaymentFormValues } from "@/lib/validations/payment
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { initiatePayment } from "@/lib/actions/payment.actions";
+import { getMyPayments } from "@/lib/actions/payment.actions";
+import { initiateOPayPayment } from "@/lib/actions/opay.actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,19 +18,36 @@ import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 import { getYearsOfStudy, isAlumnus } from "@/lib/utils/unn-data";
 import {
+  buildPaymentTracker,
   calculateFee,
   getLevelOrdinal,
   deriveSessionLabel,
   CURRENT_SESSION,
+  getPayableRequiredSession,
+  isFullyPaid,
+  isRequiredDuesType,
 } from "@/lib/utils/fees";
+
+type PaymentRecord = {
+  id: string;
+  dues_type: string;
+  payment_period: string | null;
+  status: string;
+  amount: number;
+  payment_reference: string | null;
+  payment_date: string | null;
+  created_at: string | null;
+};
 
 function PayDuesFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { profile, isLoading: isUserLoading } = useUser();
+  const { profile } = useUser();
   const [error, setError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [payments, setPayments] = React.useState<PaymentRecord[]>([]);
+  const [isPaymentsLoading, setIsPaymentsLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (profile?.role === "super_admin") {
@@ -46,19 +64,67 @@ function PayDuesFormContent() {
   const levelOrdinal = getLevelOrdinal(profile?.academic_level);
   const totalCourseYears = getYearsOfStudy(profile?.faculty);
 
+  React.useEffect(() => {
+    let mounted = true;
+
+    async function loadPayments() {
+      const result = await getMyPayments();
+      if (!mounted) return;
+
+      setPayments(result.payments || []);
+      setIsPaymentsLoading(false);
+    }
+
+    loadPayments();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const tracker = React.useMemo(
+    () =>
+      !userIsAlumnus
+        ? buildPaymentTracker({
+            currentLevelOrdinal: levelOrdinal,
+            totalCourseYears,
+            existingPayments: payments.map((payment) => ({
+              id: payment.id,
+              dues_type: payment.dues_type,
+              payment_period: payment.payment_period,
+              status: payment.status,
+              amount: payment.amount,
+              payment_reference: payment.payment_reference,
+              payment_date: payment.payment_date,
+              created_at: payment.created_at,
+            })),
+            currentSession: CURRENT_SESSION,
+          })
+        : [],
+    [levelOrdinal, payments, totalCourseYears, userIsAlumnus],
+  );
+
+  const nextRequiredSession = getPayableRequiredSession(tracker);
+  const allRequiredPaid = isFullyPaid(tracker);
+
   // Determine the target year ordinal: from URL or default to current level
   const targetYearOrdinal = prefilledYear
     ? parseInt(prefilledYear, 10)
-    : levelOrdinal;
+    : nextRequiredSession?.yearOrdinal ?? levelOrdinal;
 
   // Calculate fee breakdown for the target year
-  const feeBreakdown = targetYearOrdinal > 0
-    ? calculateFee(targetYearOrdinal, totalCourseYears)
-    : null;
+  const feeBreakdown = React.useMemo(
+    () =>
+      targetYearOrdinal > 0
+        ? calculateFee(targetYearOrdinal, totalCourseYears)
+        : null,
+    [targetYearOrdinal, totalCourseYears],
+  );
 
   // Derive session label
   const sessionLabel = prefilledSession
     ? decodeURIComponent(prefilledSession)
+    : nextRequiredSession && !prefilledType
+      ? nextRequiredSession.session
     : targetYearOrdinal > 0
       ? deriveSessionLabel(levelOrdinal, targetYearOrdinal, CURRENT_SESSION)
       : CURRENT_SESSION;
@@ -68,16 +134,14 @@ function PayDuesFormContent() {
     ? prefilledType
     : userIsAlumnus
       ? "special_levy"
-      : targetYearOrdinal === 1
-        ? "membership_levy"
-        : "annual_dues";
+      : nextRequiredSession
+        ? nextRequiredSession.feeType
+        : "special_levy";
 
   // Default amount
-  const defaultAmount = userIsAlumnus
-    ? "500"
-    : feeBreakdown
+  const defaultAmount = !userIsAlumnus && isRequiredDuesType(defaultDuesType) && feeBreakdown
       ? feeBreakdown.total.toString()
-      : "400";
+      : "";
 
   const {
     register,
@@ -90,47 +154,54 @@ function PayDuesFormContent() {
     resolver: zodResolver(paymentSchema),
     defaultValues: {
       amount: defaultAmount,
-      dues_type: defaultDuesType as any,
+      dues_type: defaultDuesType as PaymentFormValues["dues_type"],
       payment_period: sessionLabel,
       notes: "",
     },
   });
 
   const watchedDuesType = watch("dues_type");
+  const watchedAmount = watch("amount");
+  const selectedIsRequired = !userIsAlumnus && isRequiredDuesType(watchedDuesType);
 
   // Recalculate amount when dues type changes (for students)
   React.useEffect(() => {
     if (!userIsAlumnus && feeBreakdown) {
       if (watchedDuesType === "membership_levy" || watchedDuesType === "annual_dues") {
-        setValue("amount", feeBreakdown.total.toString());
+        const requiredAmount = feeBreakdown.total.toString();
+        if (watchedAmount !== requiredAmount) {
+          setValue("amount", requiredAmount);
+        }
+      } else {
+        if (watchedAmount !== "") {
+          setValue("amount", "");
+        }
       }
     }
-  }, [watchedDuesType, feeBreakdown, userIsAlumnus, setValue]);
+  }, [watchedAmount, watchedDuesType, feeBreakdown, userIsAlumnus, setValue]);
 
   // Prefill when profile loads
   React.useEffect(() => {
-    if (profile && !prefilledYear) {
-      const newAmount = userIsAlumnus
-        ? "500"
-        : feeBreakdown
+    if (profile && !isPaymentsLoading) {
+      const newAmount = !userIsAlumnus && isRequiredDuesType(defaultDuesType) && feeBreakdown
           ? feeBreakdown.total.toString()
-          : "400";
+          : "";
 
       reset({
         amount: newAmount,
-        dues_type: defaultDuesType as any,
+        dues_type: defaultDuesType as PaymentFormValues["dues_type"],
         payment_period: sessionLabel,
         notes: "",
       });
     }
-  }, [profile]);
+  }, [profile, isPaymentsLoading, defaultDuesType, feeBreakdown, reset, sessionLabel, userIsAlumnus]);
 
   const onSubmit = async (values: PaymentFormValues) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await initiatePayment({
+      const response = await initiateOPayPayment({
         amount: parseFloat(values.amount),
         dues_type: values.dues_type,
         payment_period: values.payment_period,
@@ -144,15 +215,43 @@ function PayDuesFormContent() {
           description: response.error,
           variant: "error",
         });
+        // If there's already a pending payment, offer to resume it
+        const pendingReference =
+          "pendingReference" in response ? response.pendingReference : null;
+        const cashierUrl = "cashierUrl" in response ? response.cashierUrl : null;
+
+        if (pendingReference) {
+          toast({
+            title: "Resume Pending Payment",
+            description: "Redirecting you to your existing pending checkout...",
+            variant: "info",
+          });
+          if (cashierUrl) {
+            router.push(cashierUrl);
+          } else {
+            router.push(`/dues/pay/checkout?ref=${pendingReference}`);
+          }
+        }
       } else if (response?.reference) {
-        toast({
-          title: "Order Initiated",
-          description: "Forwarding you to the secure checkout sandbox...",
-          variant: "info",
-        });
-        router.push(`/dues/pay/checkout?ref=${response.reference}`);
+        if (response.isMock) {
+          toast({
+            title: "Order Initiated",
+            description: "Forwarding you to the secure checkout sandbox...",
+            variant: "info",
+          });
+          router.push(`/dues/pay/checkout?ref=${response.reference}`);
+        } else if (response.cashierUrl) {
+          toast({
+            title: "Order Initiated",
+            description: "Forwarding you to OPay secure checkout...",
+            variant: "info",
+          });
+          router.push(response.cashierUrl);
+        } else {
+          router.push(`/dues/pay/checkout?ref=${response.reference}`);
+        }
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -160,17 +259,23 @@ function PayDuesFormContent() {
   };
 
   // Available payment types based on role
-  const paymentTypeOptions = userIsAlumnus
+  const requiredOption = !userIsAlumnus && nextRequiredSession && !allRequiredPaid
     ? [
-        { value: "special_levy", label: "Special Levy / Donation" },
-        { value: "other", label: "Other Payments" },
+        {
+          value: nextRequiredSession.feeType,
+          label:
+            nextRequiredSession.feeType === "membership_levy"
+              ? "Registration Levy (1st Year)"
+              : `Annual Session Dues (${nextRequiredSession.yearLabel})`,
+        },
       ]
-    : [
-        { value: "annual_dues", label: "Annual Session Dues" },
-        { value: "membership_levy", label: "Registration Levy (1st Year)" },
-        { value: "special_levy", label: "Special Levy / Donation" },
-        { value: "other", label: "Other Payments" },
-      ];
+    : [];
+
+  const paymentTypeOptions = [
+    ...requiredOption,
+    { value: "special_levy", label: "Special Levy / Donation" },
+    { value: "other", label: "Other Payments" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -194,7 +299,7 @@ function PayDuesFormContent() {
       <Card className="max-w-[560px] mx-auto border border-neutrals-borderLight shadow-card bg-white">
         <CardContent className="p-8">
           {/* Fee Breakdown Info Box (students only) */}
-          {!userIsAlumnus && feeBreakdown && (
+          {!userIsAlumnus && feeBreakdown && selectedIsRequired && (
             <div className="mb-6 rounded-lg bg-brand-light border border-brand-border p-4">
               <div className="flex items-start gap-2 mb-3">
                 <Info className="h-4 w-4 text-brand-accent shrink-0 mt-0.5" />
@@ -261,21 +366,20 @@ function PayDuesFormContent() {
                 {...register("amount")}
                 placeholder="5000"
                 disabled={isLoading}
-                readOnly={
-                  !userIsAlumnus &&
-                  (watchedDuesType === "annual_dues" || watchedDuesType === "membership_levy")
-                }
+                readOnly={selectedIsRequired}
                 className={
-                  !userIsAlumnus &&
-                  (watchedDuesType === "annual_dues" || watchedDuesType === "membership_levy")
+                  selectedIsRequired
                     ? "bg-gray-50 cursor-not-allowed"
                     : ""
                 }
               />
-              {!userIsAlumnus &&
-                (watchedDuesType === "annual_dues" || watchedDuesType === "membership_levy") && (
+              {selectedIsRequired ? (
                   <p className="text-[10px] text-text-tertiary">
                     Amount is auto-calculated based on your academic level and programme.
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-text-tertiary">
+                    Enter the amount you want to pay.
                   </p>
                 )}
               {errors.amount && <p className="text-[11px] text-danger mt-1">{errors.amount.message}</p>}

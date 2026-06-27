@@ -19,7 +19,6 @@ export type Database = {
           body: string
           created_at: string | null
           created_by: string | null
-          event_date: string | null
           id: string
           is_published: boolean | null
           organ: Database["public"]["Enums"]["organ_type"] | null
@@ -30,7 +29,6 @@ export type Database = {
           body: string
           created_at?: string | null
           created_by?: string | null
-          event_date?: string | null
           id?: string
           is_published?: boolean | null
           organ?: Database["public"]["Enums"]["organ_type"] | null
@@ -41,7 +39,6 @@ export type Database = {
           body?: string
           created_at?: string | null
           created_by?: string | null
-          event_date?: string | null
           id?: string
           is_published?: boolean | null
           organ?: Database["public"]["Enums"]["organ_type"] | null
@@ -172,7 +169,6 @@ export type Database = {
           organ: Database["public"]["Enums"]["organ_type"] | null
           parish: string | null
           phone: string | null
-          position: string | null
           role: Database["public"]["Enums"]["user_role"]
           society: string | null
           updated_at: string | null
@@ -199,7 +195,6 @@ export type Database = {
           organ?: Database["public"]["Enums"]["organ_type"] | null
           parish?: string | null
           phone?: string | null
-          position?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           society?: string | null
           updated_at?: string | null
@@ -226,7 +221,6 @@ export type Database = {
           organ?: Database["public"]["Enums"]["organ_type"] | null
           parish?: string | null
           phone?: string | null
-          position?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           society?: string | null
           updated_at?: string | null
@@ -252,6 +246,8 @@ export type Database = {
           id: string
           legacy_member_id: string | null
           notes: string | null
+          opay_cashier_url: string | null
+          opay_order_no: string | null
           payment_date: string | null
           payment_period: string | null
           payment_reference: string | null
@@ -271,6 +267,8 @@ export type Database = {
           id?: string
           legacy_member_id?: string | null
           notes?: string | null
+          opay_cashier_url?: string | null
+          opay_order_no?: string | null
           payment_date?: string | null
           payment_period?: string | null
           payment_reference?: string | null
@@ -290,6 +288,8 @@ export type Database = {
           id?: string
           legacy_member_id?: string | null
           notes?: string | null
+          opay_cashier_url?: string | null
+          opay_order_no?: string | null
           payment_date?: string | null
           payment_period?: string | null
           payment_reference?: string | null
@@ -344,7 +344,7 @@ export type Database = {
           parish: string | null
           passport_photo_url: string | null
           phone: string | null
-          position: string | null
+          position: Database["public"]["Enums"]["organization_position"] | null
           role: Database["public"]["Enums"]["user_role"]
           society: string | null
           status: Database["public"]["Enums"]["account_status"]
@@ -370,7 +370,7 @@ export type Database = {
           parish?: string | null
           passport_photo_url?: string | null
           phone?: string | null
-          position?: string | null
+          position?: Database["public"]["Enums"]["organization_position"] | null
           role?: Database["public"]["Enums"]["user_role"]
           society?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -396,7 +396,7 @@ export type Database = {
           parish?: string | null
           passport_photo_url?: string | null
           phone?: string | null
-          position?: string | null
+          position?: Database["public"]["Enums"]["organization_position"] | null
           role?: Database["public"]["Enums"]["user_role"]
           society?: string | null
           status?: Database["public"]["Enums"]["account_status"]
@@ -436,6 +436,30 @@ export type Database = {
         | "federation_theater"
         | "social_communications_commission"
         | "discipline_committee"
+      organization_position:
+        | "President"
+        | "Vice-President"
+        | "General Secretary"
+        | "Assistant General Secretary"
+        | "Financial Secretary"
+        | "Treasurer"
+        | "Religious Coordinator"
+        | "Assistant Religious Coordinator"
+        | "Director of Socials"
+        | "Assistant Director of Socials"
+        | "Director of Works"
+        | "Assistant Director of Works"
+        | "Director of Transport"
+        | "Assistant Director of Transport"
+        | "General Public Relations Officer (GPRO)"
+        | "Female Public Relations Officer (FPRO)"
+        | "Annunciation Public Relations Officer"
+        | "Assistant Annunciation Public Relations Officer"
+        | "Academic Coordinator"
+        | "Assistant Academic Coordinator"
+        | "Director of Hostel and Faculty Affairs"
+        | "Assistant Director of Hostel and Faculty Affairs"
+        | "Ex-Officio Member"
       payment_channel: "online" | "manual"
       payment_status: "pending" | "confirmed" | "failed" | "reversed"
       user_role: "student" | "alumnus" | "exco" | "super_admin"
@@ -575,6 +599,31 @@ export const Constants = {
         "federation_theater",
         "social_communications_commission",
         "discipline_committee",
+      ],
+      organization_position: [
+        "President",
+        "Vice-President",
+        "General Secretary",
+        "Assistant General Secretary",
+        "Financial Secretary",
+        "Treasurer",
+        "Religious Coordinator",
+        "Assistant Religious Coordinator",
+        "Director of Socials",
+        "Assistant Director of Socials",
+        "Director of Works",
+        "Assistant Director of Works",
+        "Director of Transport",
+        "Assistant Director of Transport",
+        "General Public Relations Officer (GPRO)",
+        "Female Public Relations Officer (FPRO)",
+        "Annunciation Public Relations Officer",
+        "Assistant Annunciation Public Relations Officer",
+        "Academic Coordinator",
+        "Assistant Academic Coordinator",
+        "Director of Hostel and Faculty Affairs",
+        "Assistant Director of Hostel and Faculty Affairs",
+        "Ex-Officio Member",
       ],
       payment_channel: ["online", "manual"],
       payment_status: ["pending", "confirmed", "failed", "reversed"],

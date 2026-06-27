@@ -581,8 +581,8 @@ export function LegacyMemberTable({ initialMembers, excoId, currentUserRole }: L
                     <option value="gospel_band">Gospel Band</option>
                     <option value="evangelical_committee">Evangelical Committee</option>
                     <option value="federation_theater">Federation Theater</option>
-                    <option value="social_communications_commission">Social Comms</option>
-                    <option value="discipline_committee">Discipline Committee</option>
+                    <option value="social_communications_commission">Social Communications Commission</option>
+                    <option value="decency_and_disciplinary_committee">Decency & Disciplinary Committee</option>
                   </Select>
                 </div>
 

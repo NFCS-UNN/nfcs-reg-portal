@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Printer, CheckCircle } from "lucide-react";
+import { ChevronLeft, CheckCircle, Clock, XCircle } from "lucide-react";
 import Link from "next/link";
+import { ReceiptActions } from "./ReceiptActions";
 
 export default async function ReceiptPage({
   params,
@@ -48,6 +49,13 @@ export default async function ReceiptPage({
     other: "Other Payment",
   };
 
+  const isConfirmed = payment.status === "confirmed";
+  const isPending = payment.status === "pending";
+  const isFailed = payment.status === "failed" || payment.status === "reversed";
+
+  const statusVariant = isConfirmed ? "paid" : isPending ? "pending" : "unpaid";
+  const statusLabel = isConfirmed ? "Confirmed" : isPending ? "Pending" : payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+
   return (
     <div className="space-y-6">
       {/* Navigation */}
@@ -58,27 +66,65 @@ export default async function ReceiptPage({
         >
           <ChevronLeft className="h-4 w-4" /> Back to My Dues
         </Link>
-        <Button
-          variant="secondary"
-          className="h-9 text-xs gap-2 font-semibold"
-          id="print-receipt-btn"
-        >
-          <Printer className="h-4 w-4" /> Print Receipt
-        </Button>
+        <ReceiptActions
+          paymentId={payment.id}
+          paymentReference={payment.payment_reference}
+          isConfirmed={isConfirmed}
+          isPending={isPending}
+        />
       </div>
 
+      {/* Pending / Failed Banner */}
+      {!isConfirmed && (
+        <div className={`rounded-xl border p-4 flex items-start gap-3 print:hidden ${isPending
+            ? "bg-amber-50/50 border-amber-200"
+            : "bg-red-50/50 border-red-200"
+          }`}>
+          {isPending ? (
+            <Clock className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          ) : (
+            <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+          )}
+          <div className="space-y-0.5">
+            <p className={`text-xs font-bold ${isPending ? "text-amber-800" : "text-red-800"
+              }`}>
+              {isPending ? "Payment Pending" : "Payment Failed / Reversed"}
+            </p>
+            <p className={`text-[11px] ${isPending ? "text-amber-700" : "text-red-700"
+              }`}>
+              {isPending
+                ? "This payment has not been confirmed yet. Complete your checkout to finalize it."
+                : "This payment was not completed. You may re-initiate a new payment from your dues page."}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Receipt Card */}
-      <div className="max-w-[640px] mx-auto bg-white border border-neutrals-borderLight rounded-2xl shadow-card overflow-hidden print:shadow-none print:border-none print:rounded-none">
+      <div id="receipt-card" className="max-w-[640px] mx-auto bg-white border border-neutrals-borderLight rounded-2xl shadow-card overflow-hidden print:shadow-none print:border-none print:rounded-none">
         {/* Receipt Header */}
-        <div className="bg-gradient-to-r from-brand to-brand-accent p-6 text-white text-center">
+        <div className={`p-6 text-white text-center ${isConfirmed
+            ? "bg-gradient-to-r from-brand to-brand-accent"
+            : isPending
+              ? "bg-gradient-to-r from-amber-500 to-amber-600"
+              : "bg-gradient-to-r from-red-500 to-red-600"
+          }`}>
           <h1 className="text-lg font-bold tracking-tight">NFCS UNN</h1>
           <p className="text-xs opacity-80 mt-1">
             Nigerian Federation of Catholic Students — University of Nigeria,
             Nsukka
           </p>
           <div className="mt-4 inline-flex items-center gap-2 bg-white/15 rounded-full px-4 py-1.5 backdrop-blur-sm">
-            <CheckCircle className="h-4 w-4" />
-            <span className="text-xs font-semibold">Payment Receipt</span>
+            {isConfirmed ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : isPending ? (
+              <Clock className="h-4 w-4" />
+            ) : (
+              <XCircle className="h-4 w-4" />
+            )}
+            <span className="text-xs font-semibold">
+              {isConfirmed ? "Payment Receipt" : isPending ? "Pending Payment" : "Payment Failed"}
+            </span>
           </div>
         </div>
 
@@ -95,10 +141,10 @@ export default async function ReceiptPage({
               </p>
             </div>
             <Badge
-              variant={payment.status === "confirmed" ? "paid" : "pending"}
+              variant={statusVariant}
               className="text-xs"
             >
-              {payment.status === "confirmed" ? "Confirmed" : payment.status}
+              {statusLabel}
             </Badge>
           </div>
 
@@ -109,7 +155,7 @@ export default async function ReceiptPage({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold mb-1">
-                Member Name
+                Student Name
               </p>
               <p className="text-xs font-semibold text-text-primary">
                 {profile?.full_name || "—"}
@@ -184,7 +230,19 @@ export default async function ReceiptPage({
             <div className="flex items-center justify-between">
               <p className="text-xs text-text-secondary">Date Paid</p>
               <p className="text-xs font-semibold text-text-primary">
-                {payment.payment_date || payment.created_at?.split("T")[0] || "—"}
+                {payment.payment_date
+                  ? new Date(payment.payment_date).toLocaleDateString("en-NG", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                  : payment.created_at
+                    ? new Date(payment.created_at).toLocaleDateString("en-NG", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                    : "—"}
               </p>
             </div>
             {payment.notes && (
@@ -227,30 +285,20 @@ export default async function ReceiptPage({
         {/* Footer */}
         <div className="border-t border-neutrals-borderLight bg-gray-50 p-4 text-center">
           <p className="text-[10px] text-text-tertiary">
-            This is a computer-generated receipt. For inquiries, contact the
-            NFCS Financial Secretary.
+            {isConfirmed
+              ? "This is a computer-generated receipt. For inquiries, contact the NFCS Financial Secretary."
+              : "This is a payment record. Receipt will be available once payment is confirmed."}
           </p>
           <p className="text-[9px] text-text-tertiary mt-1">
-            Generated on {new Date().toLocaleDateString("en-NG", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {isConfirmed && payment.payment_date
+              ? `Payment date: ${new Date(payment.payment_date).toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`
+              : isConfirmed && payment.created_at
+                ? `Payment date: ${new Date(payment.created_at).toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`
+                : `Record generated: ${new Date().toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`}
           </p>
         </div>
       </div>
 
-      {/* Print Script */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            document.getElementById('print-receipt-btn')?.addEventListener('click', function() {
-              window.print();
-            });
-          `,
-        }}
-      />
     </div>
   );
 }

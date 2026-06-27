@@ -156,7 +156,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             View, approve, and manage chapter members and legacy archives.
           </p>
         </div>
-        
+
         <Button asChild variant="primary" className="sm:self-end">
           <Link href="/admin/members/add" className="gap-2">
             <Plus className="h-4 w-4" /> Add Member
@@ -237,7 +237,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             <CardContent className="p-4">
               <form method="GET" className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <input type="hidden" name="tab" value="registered" />
-                
+
                 {/* Search Input */}
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-[10px] h-4 w-4 text-text-tertiary" />
@@ -291,8 +291,8 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                     <option value="gospel_band">Gospel Band</option>
                     <option value="evangelical_committee">Evangelical Committee</option>
                     <option value="federation_theater">Federation Theater</option>
-                    <option value="social_communications_commission">Social Comms</option>
-                    <option value="discipline_committee">Discipline Committee</option>
+                    <option value="social_communications_commission">Social Communication Commission</option>
+                    <option value="decency_and_disciplinary_committee">Decency & Disciplinary Committee</option>
                   </select>
                 </div>
 

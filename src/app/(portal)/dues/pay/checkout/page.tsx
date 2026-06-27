@@ -2,12 +2,30 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { confirmMockPayment, failMockPayment } from "@/lib/actions/payment.actions";
+import { confirmMockPayment, failMockPayment, getPaymentByReference } from "@/lib/actions/payment.actions";
+import {
+  expireStaleOPayCheckout,
+  resumeOPayCheckout,
+  syncOPayPaymentStatus,
+} from "@/lib/actions/opay.actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { ShieldCheck, Loader2, Sparkles, CreditCard, XCircle, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Loader2, Sparkles, XCircle, AlertTriangle } from "lucide-react";
+
+type CheckoutPayment = {
+  id: string;
+  payment_reference: string;
+  dues_type: string;
+  payment_period: string | null;
+  amount: string;
+  status: string;
+  profile_id: string;
+  gateway: string | null;
+  opay_cashier_url: string | null;
+  mock_checkout_enabled?: boolean;
+  full_name?: string | null;
+};
 
 function MockCheckoutContent() {
   const searchParams = useSearchParams();
@@ -16,9 +34,10 @@ function MockCheckoutContent() {
   const ref = searchParams.get("ref");
 
   const [isLoading, setIsLoading] = React.useState(true);
-  const [payment, setPayment] = React.useState<any>(null);
+  const [payment, setPayment] = React.useState<CheckoutPayment | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [opayContinueUrl, setOpayContinueUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     async function loadPayment() {
@@ -28,27 +47,85 @@ function MockCheckoutContent() {
         return;
       }
 
-      const supabase = createClient();
       try {
-        const { data, error } = await supabase
-          .from("payments")
-          .select("*, profiles(*)")
-          .eq("payment_reference", ref)
-          .single();
-
-        if (error || !data) {
-          setError("Payment transaction not found.");
+        // Use the server action (adminClient) to avoid RLS join issues
+        const result = await getPaymentByReference(ref);
+        if (result.error || !result.payment) {
+          setError(result.error || "Payment transaction not found.");
+          setIsLoading(false);
         } else {
-          setPayment(data);
+          const p = result.payment;
+          setPayment(p as unknown as CheckoutPayment);
+
+          if (p.status === "confirmed") {
+            router.push(`/dues/receipt/${p.id}`);
+            return;
+          }
+
+          if (p.gateway === "opay") {
+            const syncResult = await syncOPayPaymentStatus(p.payment_reference || ref);
+
+            if (syncResult.success && syncResult.status === "confirmed") {
+              router.push(`/dues/receipt/${syncResult.paymentId || p.id}`);
+              return;
+            }
+
+            if (syncResult.success && syncResult.status === "failed") {
+              setError("OPay marked this transaction as failed. Please start a fresh payment.");
+              setIsLoading(false);
+              return;
+            }
+
+            if (syncResult.error) {
+              setError(syncResult.error);
+              setIsLoading(false);
+              return;
+            }
+
+            const expireResult = await expireStaleOPayCheckout(p.payment_reference || ref);
+            if (expireResult.error) {
+              setError(expireResult.error);
+              setIsLoading(false);
+              return;
+            }
+
+            if (expireResult.expired) {
+              setError("This OPay checkout session has expired. The payment has been marked as failed. Please create a new payment.");
+              setIsLoading(false);
+              return;
+            }
+
+            if (p.opay_cashier_url) {
+              setOpayContinueUrl(p.opay_cashier_url);
+              setIsLoading(false);
+              return;
+            }
+
+            const resumeResult = await resumeOPayCheckout(p.payment_reference || ref);
+            if (resumeResult.success && resumeResult.cashierUrl) {
+              setOpayContinueUrl(resumeResult.cashierUrl);
+              setIsLoading(false);
+            } else {
+              setError(resumeResult.error || "OPay checkout link could not be recreated. Please start a fresh payment.");
+              setIsLoading(false);
+            }
+          } else if (p.gateway === "mock_gateway" && p.mock_checkout_enabled) {
+            setIsLoading(false);
+          } else if (p.gateway === "mock_gateway") {
+            setError("This old sandbox transaction can no longer be completed. Please start a fresh OPay payment.");
+            setIsLoading(false);
+          } else {
+            setError("This transaction cannot be completed from the sandbox checkout.");
+            setIsLoading(false);
+          }
         }
-      } catch (err) {
+      } catch {
         setError("Failed to load transaction details.");
-      } finally {
         setIsLoading(false);
       }
     }
     loadPayment();
-  }, [ref]);
+  }, [ref, router]);
 
   const handleSuccess = async () => {
     if (!ref) return;
@@ -69,7 +146,7 @@ function MockCheckoutContent() {
         });
         router.push("/dues");
       }
-    } catch (err) {
+    } catch {
       toast({
         title: "Simulation Error",
         description: "Failed to simulate payment.",
@@ -99,7 +176,7 @@ function MockCheckoutContent() {
         });
         router.push("/dues");
       }
-    } catch (err) {
+    } catch {
       toast({
         title: "Simulation Error",
         description: "Failed to simulate payment.",
@@ -120,14 +197,47 @@ function MockCheckoutContent() {
   }
 
   if (error || !payment) {
+    const retryHref = payment
+      ? `/dues/pay?type=${payment.dues_type}&session=${encodeURIComponent(payment.payment_period || "")}`
+      : null;
+
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 text-center">
         <AlertTriangle className="h-10 w-10 text-danger" />
         <h3 className="text-sm font-bold text-text-primary">Checkout Error</h3>
-        <p className="text-xs text-text-secondary max-w-xs">{error}</p>
-        <Button onClick={() => router.push("/dues")} variant="secondary" size="sm">
-          Return to Dues
-        </Button>
+        <p className="text-xs text-text-secondary max-w-xs">{error || "Payment not found."}</p>
+        <div className="flex gap-2">
+          {retryHref && (
+            <Button onClick={() => router.push(retryHref)} variant="primary" size="sm">
+              Retry Payment
+            </Button>
+          )}
+          <Button onClick={() => router.push("/dues")} variant="secondary" size="sm">
+            Return to Dues
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (payment.gateway === "opay") {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-3 text-center">
+        <Loader2 className="h-8 w-8 text-brand" />
+        <h3 className="text-sm font-bold text-text-primary">Payment Still Processing</h3>
+        <p className="text-xs text-text-secondary max-w-xs">
+          We could not confirm this payment yet. If you have not completed checkout, continue with OPay.
+        </p>
+        <div className="flex gap-2">
+          {opayContinueUrl && (
+            <Button onClick={() => (window.location.href = opayContinueUrl)} variant="primary" size="sm">
+              Continue to OPay
+            </Button>
+          )}
+          <Button onClick={() => router.push("/dues")} variant="secondary" size="sm">
+            Return to Dues
+          </Button>
+        </div>
       </div>
     );
   }
@@ -156,12 +266,12 @@ function MockCheckoutContent() {
           <div className="space-y-4">
             <div className="flex justify-between items-center text-xs font-semibold border-b border-neutrals-borderLight pb-3">
               <span className="text-text-secondary">Payee</span>
-              <span className="text-text-primary">{payment.profiles?.full_name}</span>
+              <span className="text-text-primary">{payment.full_name ?? "—"}</span>
             </div>
 
             <div className="flex justify-between items-center text-xs font-semibold border-b border-neutrals-borderLight pb-3">
               <span className="text-text-secondary">Dues Levy Type</span>
-              <span className="text-text-primary capitalize">{payment.dues_type.replace("_", " ")}</span>
+              <span className="text-text-primary capitalize">{payment.dues_type.replace(/_/g, " ")}</span>
             </div>
 
             <div className="flex justify-between items-center text-xs font-semibold border-b border-neutrals-borderLight pb-3">
@@ -195,7 +305,7 @@ function MockCheckoutContent() {
             >
               <ShieldCheck className="h-4 w-4" /> Simulate Payment Success
             </Button>
-            
+
             <Button
               onClick={handleFailure}
               variant="danger"

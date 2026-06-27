@@ -8,6 +8,49 @@ import { sendEmail } from "@/lib/email";
 import DuesReceipt from "../../../emails/DuesReceipt";
 import * as React from "react";
 
+/** Fetch a single payment by reference — uses adminClient to bypass RLS join issues in checkout */
+export async function getPaymentByReference(reference: string) {
+  try {
+    // Verify the caller is authenticated
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Authentication required", payment: null };
+
+    const { data: payment, error } = await adminClient
+      .from("payments")
+      .select("id, payment_reference, dues_type, payment_period, amount, status, profile_id, gateway, opay_cashier_url")
+      .eq("payment_reference", reference)
+      .single();
+
+    if (error || !payment) {
+      return { error: "Payment transaction not found.", payment: null };
+    }
+
+    // Security: ensure the payment belongs to the requesting user
+    if (payment.profile_id !== user.id) {
+      return { error: "Unauthorized.", payment: null };
+    }
+
+    // Fetch full_name from profiles
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+
+    return {
+      payment: {
+        ...payment,
+        full_name: profile?.full_name ?? null,
+        mock_checkout_enabled: process.env.OPAY_ENABLE_MOCK_CHECKOUT === "true",
+      },
+      error: null,
+    };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to load payment.", payment: null };
+  }
+}
+
 export async function initiatePayment(values: {
   amount: number;
   dues_type: any;
@@ -22,6 +65,34 @@ export async function initiatePayment(values: {
   if (!user) {
     return { error: "Authentication required" };
   }
+
+  // ── Duplicate payment guard ──────────────────────────────────────────────
+  // Prevent initiating a new payment if a confirmed or pending payment already
+  // exists for the same dues_type + payment_period for this member.
+  // (Failed / reversed payments are allowed to be re-initiated.)
+  const { data: existingPayments } = await adminClient
+    .from("payments")
+    .select("id, status, payment_reference")
+    .eq("profile_id", user.id)
+    .eq("dues_type", values.dues_type)
+    .eq("payment_period", values.payment_period)
+    .in("status", ["confirmed", "pending"]);
+
+  if (existingPayments && existingPayments.length > 0) {
+    const pending = existingPayments.find((p) => p.status === "pending");
+    const confirmed = existingPayments.find((p) => p.status === "confirmed");
+    if (confirmed) {
+      return { error: "You have already paid dues for this session. Check your payment history." };
+    }
+    if (pending) {
+      return {
+        error: "You already have a pending payment for this session. Resuming your checkout...",
+        reference: null,
+        pendingReference: pending.payment_reference,
+      };
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
 
   const payment_reference = `NFCS-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
@@ -499,5 +570,123 @@ export async function deletePayment(paymentId: string) {
     return { success: true };
   } catch (err: any) {
     return { error: err?.message || "Failed to delete payment" };
+  }
+}
+
+export async function confirmOnlinePayment(reference: string, gatewayResponse: any) {
+  try {
+    const { data: payment, error: findError } = await adminClient
+      .from("payments")
+      .select("*")
+      .eq("payment_reference", reference)
+      .single();
+
+    if (findError || !payment) {
+      return { error: "Payment record not found" };
+    }
+
+    if (payment.status === "confirmed") {
+      return { success: true, message: "Payment already confirmed" };
+    }
+
+    const { error: updateError } = await adminClient
+      .from("payments")
+      .update({
+        status: "confirmed",
+        payment_date: new Date().toISOString().split("T")[0],
+        gateway_response: gatewayResponse,
+      })
+      .eq("payment_reference", reference);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    // Write audit log
+    await adminClient.from("audit_log").insert({
+      actor_id: payment.profile_id || payment.recorded_by,
+      action: "payment_confirmed",
+      target_type: "payment",
+      target_id: payment.id,
+      metadata: {
+        reference,
+        amount: payment.amount,
+        gateway: payment.gateway,
+      },
+    });
+
+    // Send DuesReceipt email
+    try {
+      let email = "";
+      let fullName = "";
+      if (payment.profile_id) {
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", payment.profile_id)
+          .single();
+        if (profile) {
+          email = profile.email;
+          fullName = profile.full_name;
+        }
+      } else if (payment.legacy_member_id) {
+        const { data: legacy } = await adminClient
+          .from("legacy_members")
+          .select("email, full_name")
+          .eq("id", payment.legacy_member_id)
+          .single();
+        if (legacy) {
+          email = legacy.email || "";
+          fullName = legacy.full_name;
+        }
+      }
+
+      if (email) {
+        await sendEmail({
+          to: email,
+          subject: `NFCS Payment Receipt: ${reference}`,
+          react: (
+            <DuesReceipt
+              fullName={fullName}
+              reference={reference}
+              amount={payment.amount}
+              duesType={payment.dues_type}
+              period={payment.payment_period || ""}
+              datePaid={new Date().toLocaleDateString()}
+            />
+          ),
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send dues receipt email:", emailErr);
+    }
+
+    revalidatePath("/dues");
+    revalidatePath("/admin/dues");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to confirm payment" };
+  }
+}
+
+export async function failOnlinePayment(reference: string, gatewayResponse: any) {
+  try {
+    const { error } = await adminClient
+      .from("payments")
+      .update({
+        status: "failed",
+        gateway_response: gatewayResponse,
+      })
+      .eq("payment_reference", reference);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dues");
+    revalidatePath("/admin/dues");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || "Failed to mark payment as failed" };
   }
 }

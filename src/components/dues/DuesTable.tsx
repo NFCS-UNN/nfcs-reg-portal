@@ -85,7 +85,7 @@ function getPaymentStatusVariant(status: string) {
 export function DuesTable({ initialPayments, currentUserRole }: DuesTableProps) {
   const router = useRouter();
   const { toast } = useToast();
-  
+
   // State
   const [payments, setPayments] = React.useState<PaymentItem[]>(initialPayments);
   const [search, setSearch] = React.useState("");
@@ -167,39 +167,7 @@ export function DuesTable({ initialPayments, currentUserRole }: DuesTableProps) 
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this payment record? This action is permanent and cannot be undone.")) {
-      return;
-    }
-    setProcessingId(id);
-    setProcessingAction("delete");
-    try {
-      const res = await deletePayment(id);
-      if (res.error) {
-        toast({
-          title: "Action Failed",
-          description: res.error,
-          variant: "error",
-        });
-      } else {
-        toast({
-          title: "Record Deleted",
-          description: "The payment record has been permanently deleted.",
-          variant: "success",
-        });
-        router.refresh();
-      }
-    } catch (err: any) {
-      toast({
-        title: "Action Failed",
-        description: err?.message || "An unexpected error occurred.",
-        variant: "error",
-      });
-    } finally {
-      setProcessingId(null);
-      setProcessingAction(null);
-    }
-  };
+
 
   // Filtering logic
   const filteredPayments = React.useMemo(() => {
@@ -275,7 +243,7 @@ export function DuesTable({ initialPayments, currentUserRole }: DuesTableProps) 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by member name, matric, or reference..."
-              className="h-9 w-full rounded-lg bg-surface-page border border-transparent pl-9 pr-4 text-[13px] text-text-primary placeholder:text-text-tertiary transition-all focus:border-brand-accent focus:bg-white dark:focus:bg-prussian-blue-3 focus:outline-none"
+              className="h-9 w-full rounded-lg bg-surface-page border border-transparent pl-9 pr-4 text-[13px] text-text-primary placeholder:text-text-tertiary transition-all focus:border-brand-accent dark:focus:bg-prussian-blue-3 focus:outline-none"
             />
           </div>
 
@@ -392,7 +360,7 @@ export function DuesTable({ initialPayments, currentUserRole }: DuesTableProps) 
                 const matricNumber = p.profiles?.matric_number || p.legacy_members?.matric_number || "—";
                 const avatarUrl = p.profiles?.passport_photo_url;
                 const isLegacy = p.legacy_member_id && !p.profile_id;
-                
+
                 // Exco / Auditor information
                 const auditorName = p.recorder?.full_name;
                 const auditorAvatar = p.recorder?.passport_photo_url;
@@ -518,23 +486,6 @@ export function DuesTable({ initialPayments, currentUserRole }: DuesTableProps) 
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
                               <RotateCcw className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                        )}
-
-                        {/* Delete action — super_admin only */}
-                        {currentUserRole === "super_admin" && (
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDelete(p.id)}
-                            disabled={isProcessing}
-                            className="h-7 w-7 p-0 text-danger hover:text-danger-hover hover:bg-rose-50 dark:hover:bg-rose-950/20"
-                            title="Delete Record (Super Admin only)"
-                          >
-                            {isProcessing && processingAction === "delete" ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3.5 w-3.5" />
                             )}
                           </Button>
                         )}

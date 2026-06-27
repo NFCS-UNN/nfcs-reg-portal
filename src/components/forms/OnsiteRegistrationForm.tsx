@@ -11,6 +11,7 @@ import { onsiteRegisterMember } from "@/lib/actions/member.actions";
 import { AlertCircle, Upload, CheckCircle, Info } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/hooks/useUser";
+import { UNN_CAMPUS_DATA } from "@/lib/utils/unn-data";
 
 export function OnsiteRegistrationForm() {
   const { toast } = useToast();
@@ -21,11 +22,22 @@ export function OnsiteRegistrationForm() {
   const [photoFile, setPhotoFile] = React.useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
 
+  // Dynamic dropdown states for UNN Campus Data
+  const [selectedFaculty, setSelectedFaculty] = React.useState("");
+  const [selectedDepartment, setSelectedDepartment] = React.useState("");
+  const [selectedHostel, setSelectedHostel] = React.useState("");
+  const [customAddress, setCustomAddress] = React.useState("");
+
+  const isRestrictedRole = profile ? (profile.role !== "exco" && profile.role !== "super_admin") : false;
+  const isFacultyDisabled = isRestrictedRole && !!profile?.faculty;
+  const isDepartmentDisabled = isRestrictedRole && !!profile?.department;
+  const isAcademicLevelDisabled = isRestrictedRole && !!profile?.academic_level;
+
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, disabled },
   } = useForm<MemberFormValues>({
     resolver: zodResolver(memberSchema),
     defaultValues: {
@@ -141,7 +153,7 @@ export function OnsiteRegistrationForm() {
           <div className="border-b border-neutrals-borderLight pb-2">
             <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">Account Credentials</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-text-secondary">Email Address</label>
@@ -197,16 +209,50 @@ export function OnsiteRegistrationForm() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Faculty Dropdown */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Faculty</label>
-              <Input error={!!errors.faculty} {...register("faculty")} placeholder="Physical Sciences" />
-              {errors.faculty && <p className="text-[11px] text-danger mt-1 font-medium">{errors.faculty.message}</p>}
+              <label className="text-xs font-semibold text-text-secondary flex items-center justify-between">
+                <span>Faculty</span>
+                {isFacultyDisabled && <span className="text-[10px] text-amber-600 font-normal">Locked (Contact Admin to change)</span>}
+              </label>
+              <Select
+                name="faculty"
+                value={selectedFaculty}
+                onChange={(e) => {
+                  setSelectedFaculty(e.target.value);
+                  setSelectedDepartment(""); // Reset department when faculty changes
+                }}
+                disabled={isLoading || isFacultyDisabled}
+                className="text-xs"
+                required
+              >
+                <option value="">Select Faculty</option>
+                {Object.keys(UNN_CAMPUS_DATA).map((fac) => (
+                  <option key={fac} value={fac}>{fac}</option>
+                ))}
+              </Select>
             </div>
 
+            {/* Department Dropdown (Filtered by Faculty) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-text-secondary">Department</label>
-              <Input error={!!errors.department} {...register("department")} placeholder="Computer Science" />
-              {errors.department && <p className="text-[11px] text-danger mt-1 font-medium">{errors.department.message}</p>}
+              <label className="text-xs font-semibold text-text-secondary flex items-center justify-between">
+                <span>Department</span>
+                {isDepartmentDisabled && <span className="text-[10px] text-amber-600 font-normal">Locked</span>}
+              </label>
+              <Select
+                name="department"
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                disabled={isLoading || !selectedFaculty || isDepartmentDisabled}
+                className="text-xs"
+                required
+              >
+                <option value="">Select Department</option>
+                {selectedFaculty &&
+                  UNN_CAMPUS_DATA[selectedFaculty]?.map((dept) => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+              </Select>
             </div>
           </div>
 
@@ -243,11 +289,11 @@ export function OnsiteRegistrationForm() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-text-secondary">Assigned Organ</label>
-              <Select error={!!errors.organ} {...register("organ")}>
+              <Select error={!!errors.organ} {...register("organ")} className="uppercase">
                 <option value="">Select Organ</option>
                 {ORGANS.map((o) => (
-                  <option key={o} value={o}>
-                    {o.replace("_", " ").toUpperCase()}
+                  <option key={o} value={o} className="uppercase">
+                    {o.charAt(0).toUpperCase() + o.slice(1).replaceAll("_", " ")}
                   </option>
                 ))}
               </Select>
@@ -300,7 +346,9 @@ export function OnsiteRegistrationForm() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-neutrals-borderLight">
-          <Button type="submit" variant="primary" className="gap-2 px-6" isLoading={isLoading}>
+          <Button type="submit" variant="primary" className="gap-2 px-6" isLoading={isLoading} disabled={
+            disabled
+          }>
             Register & Activate Member
           </Button>
         </div>

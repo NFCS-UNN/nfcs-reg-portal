@@ -279,20 +279,20 @@ export function MemberProfileEditor({ member, adminId }: { member: any; adminId:
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-text-primary">Assigned Organ</label>
-              <Select name="organ" defaultValue={member.organ || ""}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Organ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gospel_band">Gospel Band</SelectItem>
-                  <SelectItem value="evangelical_committee">Evangelical Committee</SelectItem>
-                  <SelectItem value="federation_theater">Federation Theater</SelectItem>
-                  <SelectItem value="social_communications_commission">Social Comms</SelectItem>
-                  <SelectItem value="discipline_committee">Discipline Committee</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-text-secondary select-none">Organ:</span>
+              <select
+                name="organ"
+                defaultValue={organ}
+                className="h-9 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-prussian-blue-2 px-2 py-1 text-xs text-text-primary focus:border-brand-accent focus:outline-none"
+              >
+                <option value="all">All Organs</option>
+                <option value="gospel_band">Gospel Band</option>
+                <option value="evangelical_committee">Evangelical Committee</option>
+                <option value="federation_theater">Federation Theater</option>
+                <option value="social_communications_commission">Social Communication Commission</option>
+                <option value="decency_and_disciplinary_committee">Decency & Disciplinary Committee</option>
+              </select>
             </div>
 
             {/* Society dropdown from NFCS_SOCIETIES */}

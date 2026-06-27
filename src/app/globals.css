@@ -695,3 +695,65 @@ html {
   border-color: var(--border) !important;
   color: var(--foreground) !important;
 }
+
+/* ─── PRINT / PDF STYLES (for receipt page) ─────────────────────────────── */
+@media print {
+  /* Hide all non-printable elements */
+  aside,
+  nav,
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset layout wrapper so there is no sidebar offset */
+  .md\:pl-\[220px\] {
+    padding-left: 0 !important;
+  }
+
+  .min-h-screen,
+  div.min-h-screen {
+    min-height: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Reset body and html settings */
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Reset main wrapper */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Format receipt card for printing */
+  .max-w-\[640px\] {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+  }
+
+  /* Keep colors and gradients exact */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+}

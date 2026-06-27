@@ -5,35 +5,34 @@ export const ORGANS = [
   "evangelical_committee",
   "federation_theater",
   "social_communications_commission",
-  "discipline_committee",
+  "decency_and_disciplinary_committee",
 ] as const;
 
 const currentYear = new Date().getFullYear();
 
-export const matricSchema = z.string()
-  .refine(
-    (val) => {
-      const regex = /^(\d{4})\/(\d{6})$/;
-      const match = val.match(regex);
-      if (!match) return false;
-      const year = parseInt(match[1], 10);
-      return year >= 1960 && year <= currentYear;
-    },
-    {
-      message: `Matric number must be in format YYYY/DDDDDD (e.g. 2021/123456) with year between 1960 and ${currentYear}`,
-    }
-  );
+export const matricSchema = z.string().refine(
+  (val) => {
+    const regex = /^(\d{4})\/(\d{6})$/;
+    const match = val.match(regex);
+    if (!match) return false;
+    const year = parseInt(match[1], 10);
+    return year >= 1960 && year <= currentYear;
+  },
+  {
+    message: `Matric number must be in format YYYY/DDDDDD (e.g. 2021/123456) with year between 1960 and ${currentYear}`,
+  },
+);
 
-export const phoneSchema = z.string()
-  .refine(
-    (val) => {
-      const regex = /^(?:\+234|234|0)[789]\d{9}$/;
-      return regex.test(val);
-    },
-    {
-      message: "Please enter a valid Nigerian phone number (e.g. 08031234567 or +2348031234567)",
-    }
-  );
+export const phoneSchema = z.string().refine(
+  (val) => {
+    const regex = /^(?:\+234|234|0)[789]\d{9}$/;
+    return regex.test(val);
+  },
+  {
+    message:
+      "Please enter a valid Nigerian phone number (e.g. 08031234567 or +2348031234567)",
+  },
+);
 
 export const memberSchema = z.object({
   full_name: z.string().min(2, "Full name must be at least 2 characters"),
@@ -61,4 +60,3 @@ export const signupSchema = z.object({
 });
 
 export type SignupFormValues = z.infer<typeof signupSchema>;
-

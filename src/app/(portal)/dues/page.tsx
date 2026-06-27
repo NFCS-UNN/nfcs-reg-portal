@@ -21,6 +21,8 @@ import {
   Gift,
   AlertTriangle,
   Printer,
+  Eye,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -31,6 +33,7 @@ import {
   getNextOutstanding,
   isFullyPaid,
   CURRENT_SESSION,
+  getPayableRequiredSession,
   type PaymentSession,
 } from "@/lib/utils/fees";
 
@@ -53,17 +56,19 @@ function TrackerStep({
   session,
   index,
   isLast,
+  nextPayableYear,
 }: {
   session: PaymentSession;
   index: number;
   isLast: boolean;
+  nextPayableYear: number | null;
 }) {
   const isPaid = session.existingPayment?.status === "confirmed";
   const isPending = session.existingPayment?.status === "pending";
   const isFailed =
     session.existingPayment &&
     ["failed", "reversed"].includes(session.existingPayment.status);
-  const isOutstanding = !session.existingPayment;
+  const canPayRequired = nextPayableYear === session.yearOrdinal;
 
   return (
     <div className="flex gap-4">
@@ -154,23 +159,43 @@ function TrackerStep({
                 {session.existingPayment?.id && (
                   <Link
                     href={`/dues/receipt/${session.existingPayment.id}`}
-                    className="text-brand-accent hover:text-brand transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-brand-accent hover:text-brand transition-colors font-semibold"
                     title="View Receipt"
                   >
-                    <Printer className="h-4 w-4" />
+                    <Eye className="h-3.5 w-3.5" /> View
                   </Link>
                 )}
               </div>
             ) : isPending ? (
-              <Badge variant="pending">Pending</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="pending">Pending</Badge>
+                {session.existingPayment?.payment_reference && (
+                  <Button asChild variant="secondary" className="h-8 text-xs px-3 gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-50">
+                    <Link href={`/dues/pay/checkout?ref=${session.existingPayment.payment_reference}`}>
+                      Resume <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            ) : isFailed && canPayRequired ? (
+              <div className="flex items-center gap-2">
+                <Badge variant="unpaid">Failed</Badge>
+                <Button asChild variant="secondary" className="h-8 text-xs px-3 gap-1.5">
+                  <Link href={`/dues/pay?year=${session.yearOrdinal}&session=${encodeURIComponent(session.session)}&type=${session.feeType}`}>
+                    Retry <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
             ) : isFailed ? (
               <Badge variant="unpaid">Failed</Badge>
-            ) : (
+            ) : canPayRequired ? (
               <Button asChild variant="primary" className="h-8 text-xs px-3 gap-1.5">
-                <Link href={`/dues/pay?year=${session.yearOrdinal}&session=${encodeURIComponent(session.session)}`}>
+                <Link href={`/dues/pay?year=${session.yearOrdinal}&session=${encodeURIComponent(session.session)}&type=${session.feeType}`}>
                   Pay Now <ArrowRight className="h-3 w-3" />
                 </Link>
               </Button>
+            ) : (
+              <Badge variant="inactive">Locked</Badge>
             )}
           </div>
         </div>
@@ -232,6 +257,7 @@ export default async function MyDuesPage() {
     : [];
 
   const nextOutstanding = getNextOutstanding(tracker);
+  const nextPayableRequired = getPayableRequiredSession(tracker);
   const allPaid = isFullyPaid(tracker);
   const paidCount = tracker.filter(
     (s) => s.existingPayment?.status === "confirmed"
@@ -253,7 +279,13 @@ export default async function MyDuesPage() {
         </div>
 
         <Button asChild variant="primary" className="sm:self-end gap-2">
-          <Link href="/dues/pay">
+          <Link
+            href={
+              !userIsAlumnus && nextPayableRequired
+                ? `/dues/pay?year=${nextPayableRequired.yearOrdinal}&session=${encodeURIComponent(nextPayableRequired.session)}&type=${nextPayableRequired.feeType}`
+                : "/dues/pay?type=special_levy"
+            }
+          >
             <CreditCard className="h-4 w-4" /> Pay Dues / Levies
           </Link>
         </Button>
@@ -376,6 +408,7 @@ export default async function MyDuesPage() {
                     session={session}
                     index={i}
                     isLast={i === tracker.length - 1}
+                    nextPayableYear={nextPayableRequired?.yearOrdinal ?? null}
                   />
                 ))}
               </div>
@@ -418,7 +451,7 @@ export default async function MyDuesPage() {
                   <TableHead>Channel</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date Paid</TableHead>
-                  <TableHead>Receipt</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -467,17 +500,41 @@ export default async function MyDuesPage() {
                     </TableCell>
 
                     <TableCell>
-                      {p.status === "confirmed" ? (
+                      <div className="flex items-center gap-2">
+                        {/* View button — always shown */}
                         <Link
                           href={`/dues/receipt/${p.id}`}
-                          className="inline-flex items-center gap-1 text-xs text-brand-accent hover:text-brand transition-colors font-semibold"
+                          className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-brand-accent transition-colors font-semibold"
+                          title="View Payment"
                         >
-                          <Printer className="h-3.5 w-3.5" />
-                          Print
+                          <Eye className="h-3.5 w-3.5" />
+                          View
                         </Link>
-                      ) : (
-                        <span className="text-xs text-text-tertiary">—</span>
-                      )}
+
+                        {/* Print — confirmed only */}
+                        {p.status === "confirmed" && (
+                          <Link
+                            href={`/dues/receipt/${p.id}`}
+                            className="inline-flex items-center gap-1 text-xs text-brand-accent hover:text-brand transition-colors font-semibold"
+                            title="Print Receipt"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            Print
+                          </Link>
+                        )}
+
+                        {/* Complete — pending online payments only */}
+                        {p.status === "pending" && p.channel === "online" && p.payment_reference && (
+                          <Link
+                            href={`/dues/pay/checkout?ref=${p.payment_reference}`}
+                            className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 transition-colors font-semibold"
+                            title="Complete Pending Payment"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Complete
+                          </Link>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

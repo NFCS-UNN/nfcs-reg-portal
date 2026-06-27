@@ -30,6 +30,8 @@ interface AdminAnalyticsProps {
     onlineCollected: number;
     manualCollected: number;
     pendingCount: number;
+    duesCollected: number;
+    otherCollected: number;
   };
   profileDates: (string | null | undefined)[];
   allPayments: {
@@ -122,7 +124,7 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
         <Card hoverable>
           <CardContent className="p-5 flex items-center gap-4 justify-between">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-text-secondary">Total Dues Collected</span>
+              <span className="text-xs font-semibold text-text-secondary">Total Amount Collected</span>
               <h3 className="text-2xl font-bold text-text-primary">
                 ₦{adminStats.totalCollected.toLocaleString()}
               </h3>
@@ -135,18 +137,31 @@ export function AdminAnalytics({ adminStats, profileDates, allPayments }: AdminA
       </div>
 
       {/* Additional Financial Breakdown (Online vs Manual) */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
-          <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Online Payments</span>
-          <span className="text-xl font-bold text-text-primary">₦{adminStats.onlineCollected.toLocaleString()}</span>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Online Payments</span>
+            <span className="text-xl font-bold text-text-primary">₦{adminStats.onlineCollected.toLocaleString()}</span>
+          </div>
+          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Manual Receipts</span>
+            <span className="text-xl font-bold text-text-primary">₦{adminStats.manualCollected.toLocaleString()}</span>
+          </div>
+          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Pending / Failed Dues</span>
+            <span className="text-xl font-bold text-text-primary">{adminStats.pendingCount} transactions</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
-          <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Manual Receipts</span>
-          <span className="text-xl font-bold text-text-primary">₦{adminStats.manualCollected.toLocaleString()}</span>
-        </div>
-        <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
-          <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Pending / Failed Dues</span>
-          <span className="text-xl font-bold text-text-primary">{adminStats.pendingCount} transactions</span>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Dues Collected (Registration &amp; Annual Dues)</span>
+            <span className="text-xl font-bold text-brand">₦{adminStats.duesCollected.toLocaleString()}</span>
+          </div>
+          <div className="flex flex-col gap-1 bg-white dark:bg-prussian-blue-2 border border-neutrals-borderLight p-4 rounded-xl shadow-sm">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">Other Payments Collected (Special Levies &amp; Others)</span>
+            <span className="text-xl font-bold text-emerald-600">₦{adminStats.otherCollected.toLocaleString()}</span>
+          </div>
         </div>
       </div>
 
