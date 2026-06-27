@@ -46,8 +46,21 @@ function isOPayTimeoutError(err: unknown) {
   );
 }
 
+function readEnv(name: string) {
+  return process.env[name]?.trim();
+}
+
+function isPlaceholderValue(value?: string) {
+  return (
+    !value ||
+    value.toLowerCase().includes("placeholder") ||
+    value.toLowerCase().includes("your-") ||
+    value.startsWith("OPAYxxx")
+  );
+}
+
 function getOPayCheckoutTtlMs() {
-  const configuredMinutes = Number(process.env.OPAY_CHECKOUT_TTL_MINUTES || 30);
+  const configuredMinutes = Number(readEnv("OPAY_CHECKOUT_TTL_MINUTES") || 30);
   const minutes = Number.isFinite(configuredMinutes) && configuredMinutes > 0
     ? configuredMinutes
     : 30;
@@ -108,16 +121,10 @@ export async function initiateOPayPayment(values: {
     .eq("id", user.id)
     .single();
 
-  const isPlaceholderValue = (value?: string) =>
-    !value ||
-    value.toLowerCase().includes("placeholder") ||
-    value.toLowerCase().includes("your-") ||
-    value.startsWith("OPAYxxx");
-
   const isMockCheckoutEnabled = process.env.OPAY_ENABLE_MOCK_CHECKOUT === "true";
   const hasOPayCredentials =
-    !isPlaceholderValue(process.env.OPAY_PUBLIC_KEY) &&
-    !isPlaceholderValue(process.env.OPAY_MERCHANT_ID);
+    !isPlaceholderValue(readEnv("OPAY_PUBLIC_KEY")) &&
+    !isPlaceholderValue(readEnv("OPAY_MERCHANT_ID"));
 
   if (profile && !isAlumnus(profile.role) && isRequiredDuesType(values.dues_type)) {
     const levelOrdinal = getLevelOrdinal(profile.academic_level);

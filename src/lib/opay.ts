@@ -61,8 +61,63 @@ type OPayOrderResponse = Record<string, unknown> & {
   orderNo?: string;
 };
 
+function readEnv(name: string) {
+  return process.env[name]?.trim();
+}
+
+function readBaseUrl(name: string, fallback?: string) {
+  return (readEnv(name) || fallback || "").replace(/\/$/, "");
+}
+
+function isPlaceholderValue(value?: string) {
+  return (
+    !value ||
+    value.toLowerCase().includes("placeholder") ||
+    value.toLowerCase().includes("your-") ||
+    value.startsWith("OPAYxxx")
+  );
+}
+
+function summarizeEnvValue(name: string, value?: string) {
+  return {
+    name,
+    present: Boolean(value),
+    usable: !isPlaceholderValue(value),
+    length: value?.length || 0,
+    last4: value ? value.slice(-4) : null,
+  };
+}
+
+export function getOPayEnvironmentDiagnostics() {
+  const secretKey = getOPaySecretKey();
+
+  return {
+    baseUrl: readBaseUrl("OPAY_BASE_URL", "https://testapi.opaycheckout.com"),
+    country: readEnv("OPAY_COUNTRY") || "NG",
+    currency: readEnv("OPAY_CURRENCY") || "NGN",
+    appUrl: readBaseUrl("NEXT_PUBLIC_APP_URL") || null,
+    merchantId: summarizeEnvValue("OPAY_MERCHANT_ID", readEnv("OPAY_MERCHANT_ID")),
+    publicKey: summarizeEnvValue("OPAY_PUBLIC_KEY", readEnv("OPAY_PUBLIC_KEY")),
+    secretKey: summarizeEnvValue("OPAY_SECRET_KEY", readEnv("OPAY_SECRET_KEY")),
+    privateKey: summarizeEnvValue("OPAY_PRIVATE_KEY", readEnv("OPAY_PRIVATE_KEY")),
+    activeServerSecret: summarizeEnvValue("OPAY_SECRET_KEY/OPAY_PRIVATE_KEY", secretKey),
+  };
+}
+
+function missingCredentialsError(requiredLabel: string) {
+  const diagnostics = getOPayEnvironmentDiagnostics();
+  console.error("OPay credentials are not usable", diagnostics);
+
+  return new Error(
+    `Missing OPay credentials (${requiredLabel}). Runtime check: ` +
+      `merchantId=${diagnostics.merchantId.usable ? "ok" : "missing"}, ` +
+      `publicKey=${diagnostics.publicKey.usable ? "ok" : "missing"}, ` +
+      `secretKey=${diagnostics.activeServerSecret.usable ? "ok" : "missing"}.`,
+  );
+}
+
 export function getOPaySecretKey() {
-  return process.env.OPAY_PRIVATE_KEY || process.env.OPAY_SECRET_KEY;
+  return readEnv("OPAY_PRIVATE_KEY") || readEnv("OPAY_SECRET_KEY");
 }
 
 async function readOPayResponse(response: Response): Promise<OPayApiResponse> {
@@ -86,14 +141,19 @@ async function readOPayResponse(response: Response): Promise<OPayApiResponse> {
  */
 export async function createOPayOrder(params: OPayOrderParams): Promise<OPayOrderResponse> {
   const baseUrl =
-    process.env.OPAY_BASE_URL || "https://testapi.opaycheckout.com";
-  const merchantId = process.env.OPAY_MERCHANT_ID;
-  const publicKey = process.env.OPAY_PUBLIC_KEY;
-  const country = process.env.OPAY_COUNTRY || "NG";
-  const currency = process.env.OPAY_CURRENCY || "NGN";
+    readBaseUrl("OPAY_BASE_URL", "https://testapi.opaycheckout.com");
+  const appUrl = readBaseUrl("NEXT_PUBLIC_APP_URL");
+  const merchantId = readEnv("OPAY_MERCHANT_ID");
+  const publicKey = readEnv("OPAY_PUBLIC_KEY");
+  const country = readEnv("OPAY_COUNTRY") || "NG";
+  const currency = readEnv("OPAY_CURRENCY") || "NGN";
 
-  if (!merchantId || !publicKey) {
-    throw new Error("Missing OPay credentials (Merchant ID or Public Key)");
+  if (isPlaceholderValue(merchantId) || isPlaceholderValue(publicKey)) {
+    throw missingCredentialsError("Merchant ID or Public Key");
+  }
+
+  if (!appUrl) {
+    throw new Error("Missing NEXT_PUBLIC_APP_URL. OPay needs this for returnUrl and callbackUrl.");
   }
 
   // OPay amount total is in the lowest currency unit (kobo/piastres).
@@ -111,8 +171,8 @@ export async function createOPayOrder(params: OPayOrderParams): Promise<OPayOrde
       total: totalAmountLowestUnit,
       currency: params.currency || currency,
     },
-    returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dues/pay/checkout?ref=${params.reference}&opay_return=1`,
-    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback`,
+    returnUrl: `${appUrl}/dues/pay/checkout?ref=${params.reference}&opay_return=1`,
+    callbackUrl: `${appUrl}/api/payment/callback`,
     userInfo: {
       userName: params.customerName || "Student",
       userEmail: params.customerEmail || "student@nfcs-unn.org",
@@ -170,13 +230,13 @@ export async function createOPayOrder(params: OPayOrderParams): Promise<OPayOrde
  */
 export async function queryOPayStatus(reference: string) {
   const baseUrl =
-    process.env.OPAY_BASE_URL || "https://testapi.opaycheckout.com";
-  const merchantId = process.env.OPAY_MERCHANT_ID;
+    readBaseUrl("OPAY_BASE_URL", "https://testapi.opaycheckout.com");
+  const merchantId = readEnv("OPAY_MERCHANT_ID");
   const secretKey = getOPaySecretKey();
-  const country = process.env.OPAY_COUNTRY || "NG";
+  const country = readEnv("OPAY_COUNTRY") || "NG";
 
-  if (!merchantId || !secretKey) {
-    throw new Error("Missing OPay credentials (Merchant ID or OPAY_SECRET_KEY/OPAY_PRIVATE_KEY)");
+  if (isPlaceholderValue(merchantId) || isPlaceholderValue(secretKey)) {
+    throw missingCredentialsError("Merchant ID or OPAY_SECRET_KEY/OPAY_PRIVATE_KEY");
   }
 
   const payload = {
