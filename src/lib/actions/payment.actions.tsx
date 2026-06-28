@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/email";
 import DuesReceipt from "../../../emails/DuesReceipt";
 import { parseMoneyAmount } from "@/lib/utils/money";
 import * as React from "react";
+import { createNotification } from "@/lib/actions/notification.actions";
 
 /** Fetch a single payment by reference — uses adminClient to bypass RLS join issues in checkout */
 export async function getPaymentByReference(reference: string) {
@@ -118,6 +119,17 @@ export async function initiatePayment(values: {
       return { error: error.message };
     }
 
+    // In-app notification for the initiating student
+    if (payment.profile_id) {
+      await createNotification({
+        profile_id: payment.profile_id,
+        title: "Payment Initiated ⏳",
+        body: `Your payment of ₦${Number(payment.amount).toLocaleString()} for ${(payment.dues_type as string)?.replace("_", " ")} (${payment.payment_period ?? ""}) has been initiated. Status: Pending. Ref: ${payment_reference}.`,
+        type: "payment_pending",
+        metadata: { reference: payment_reference, amount: payment.amount, dues_type: payment.dues_type, status: "pending" },
+      });
+    }
+
     return { success: true, reference: payment_reference };
   } catch (err: any) {
     return { error: err?.message || "Failed to initiate payment" };
@@ -206,6 +218,18 @@ export async function confirmMockPayment(reference: string) {
       console.error("Failed to send dues receipt email:", emailErr);
     }
 
+
+    // In-app notification for the paying student
+    if (payment.profile_id) {
+      await createNotification({
+        profile_id: payment.profile_id,
+        title: "Payment Confirmed ✓",
+        body: `Your payment of ₦${Number(payment.amount).toLocaleString()} for ${(payment.dues_type as string)?.replace("_", " ")} (${payment.payment_period ?? ""}) has been confirmed. Ref: ${reference}.`,
+        type: "payment_confirmed",
+        metadata: { reference, amount: payment.amount, dues_type: payment.dues_type },
+      });
+    }
+
     revalidatePath("/dues");
     revalidatePath("/admin/dues");
     return { success: true };
@@ -216,15 +240,28 @@ export async function confirmMockPayment(reference: string) {
 
 export async function failMockPayment(reference: string) {
   try {
-    const { error } = await adminClient
+    const { data: payment, error } = await adminClient
       .from("payments")
       .update({
         status: "failed",
       })
-      .eq("payment_reference", reference);
+      .eq("payment_reference", reference)
+      .select()
+      .single();
 
-    if (error) {
-      return { error: error.message };
+    if (error || !payment) {
+      return { error: error?.message || "Payment record not found" };
+    }
+
+    // In-app notification for the student
+    if (payment.profile_id) {
+      await createNotification({
+        profile_id: payment.profile_id,
+        title: "Payment Failed ✗",
+        body: `Your payment of ₦${Number(payment.amount).toLocaleString()} for ${(payment.dues_type as string)?.replace("_", " ")} (${payment.payment_period ?? ""}) has failed. Ref: ${reference}.`,
+        type: "payment_failed",
+        metadata: { reference, amount: payment.amount, dues_type: payment.dues_type, status: "failed" },
+      });
     }
 
     revalidatePath("/dues");
@@ -326,6 +363,38 @@ export async function recordManualPayment(values: ManualPaymentFormValues, excoI
       }
     } catch (emailErr) {
       console.error("Failed to send dues receipt email:", emailErr);
+    }
+
+    // Dual in-app notifications for manual payments
+    if (profile_id) {
+      // Fetch exco name
+      const { data: excoProfile } = await adminClient
+        .from("profiles")
+        .select("full_name")
+        .eq("id", excoId)
+        .single();
+      const excoName = excoProfile?.full_name ?? "an Exco member";
+      const amountFormatted = `₦${Number(payment.amount).toLocaleString()}`;
+      const duesLabel = (payment.dues_type as string)?.replace("_", " ") ?? "dues";
+      const period = payment.payment_period ?? "";
+
+      // Student notification (names the exco who recorded it)
+      await createNotification({
+        profile_id,
+        title: "Payment Recorded ✓",
+        body: `Your ${duesLabel} payment of ${amountFormatted}${period ? ` for ${period}` : ""} was successfully recorded by ${excoName}.`,
+        type: "payment_recorded_by_exco",
+        metadata: { payment_id: payment.id, recorded_by: excoId, exco_name: excoName, amount: payment.amount },
+      });
+
+      // Exco notification (names the student)
+      await createNotification({
+        profile_id: excoId,
+        title: "Payment Successfully Recorded",
+        body: `You successfully recorded a ${duesLabel} payment of ${amountFormatted}${period ? ` for ${period}` : ""} on behalf of ${fullName}.`,
+        type: "payment_recorded_by_exco",
+        metadata: { payment_id: payment.id, student_name: fullName, student_id: profile_id, amount: payment.amount },
+      });
     }
 
     revalidatePath("/dues");
@@ -454,6 +523,17 @@ export async function confirmPayment(paymentId: string) {
       }
     } catch (emailErr) {
       console.error("Failed to send dues receipt email:", emailErr);
+    }
+
+    // In-app notification for the student
+    if (payment.profile_id) {
+      await createNotification({
+        profile_id: payment.profile_id,
+        title: "Payment Confirmed ✓",
+        body: `Your payment of ₦${Number(payment.amount).toLocaleString()} for ${(payment.dues_type as string)?.replace("_", " ")} (${payment.payment_period ?? ""}) has been confirmed. Ref: ${payment.payment_reference}.`,
+        type: "payment_confirmed",
+        metadata: { reference: payment.payment_reference, amount: payment.amount, dues_type: payment.dues_type, status: "confirmed" },
+      });
     }
 
     revalidatePath("/dues");
@@ -664,6 +744,17 @@ export async function confirmOnlinePayment(reference: string, gatewayResponse: a
       console.error("Failed to send dues receipt email:", emailErr);
     }
 
+    // In-app notification for the student
+    if (payment.profile_id) {
+      await createNotification({
+        profile_id: payment.profile_id,
+        title: "Payment Confirmed ✓",
+        body: `Your online payment of ₦${Number(payment.amount).toLocaleString()} for ${(payment.dues_type as string)?.replace("_", " ")} (${payment.payment_period ?? ""}) has been confirmed. Ref: ${reference}.`,
+        type: "payment_confirmed",
+        metadata: { reference, amount: payment.amount, dues_type: payment.dues_type, status: "confirmed" },
+      });
+    }
+
     revalidatePath("/dues");
     revalidatePath("/admin/dues");
     return { success: true };
@@ -674,16 +765,29 @@ export async function confirmOnlinePayment(reference: string, gatewayResponse: a
 
 export async function failOnlinePayment(reference: string, gatewayResponse: any) {
   try {
-    const { error } = await adminClient
+    const { data: payment, error } = await adminClient
       .from("payments")
       .update({
         status: "failed",
         gateway_response: gatewayResponse,
       })
-      .eq("payment_reference", reference);
+      .eq("payment_reference", reference)
+      .select()
+      .single();
 
-    if (error) {
-      return { error: error.message };
+    if (error || !payment) {
+      return { error: error?.message || "Payment record not found" };
+    }
+
+    // In-app notification for the student
+    if (payment.profile_id) {
+      await createNotification({
+        profile_id: payment.profile_id,
+        title: "Payment Failed ✗",
+        body: `Your online payment of ₦${Number(payment.amount).toLocaleString()} for ${(payment.dues_type as string)?.replace("_", " ")} (${payment.payment_period ?? ""}) has failed. Ref: ${reference}.`,
+        type: "payment_failed",
+        metadata: { reference, amount: payment.amount, dues_type: payment.dues_type, status: "failed" },
+      });
     }
 
     revalidatePath("/dues");

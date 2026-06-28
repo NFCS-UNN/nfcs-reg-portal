@@ -7,6 +7,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { ProfileGateModal } from "@/components/layout/ProfileGateModal";
 import { ThemeProvider } from "@/lib/utils/theme";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 
 export default function PortalLayout({
   children,
@@ -17,6 +18,7 @@ export default function PortalLayout({
 
   return (
     <ThemeProvider>
+      <NotificationProvider>
       <div className="min-h-screen w-full bg-surface-page">
         {/* Profile Completion Gate */}
         <ProfileGateModal />
@@ -38,11 +40,12 @@ export default function PortalLayout({
           <Navbar onMenuToggle={() => setMobileMenuOpen(true)} />
 
           {/* Inner Content Area */}
-          <main className="flex-1 w-full max-w-[1280px] p-6 mx-auto animate-in fade-in-50 duration-200">
+          <main className="flex-1 w-full max-w-[1280px] p-6 pb-28 md:pb-6 mx-auto animate-in fade-in-50 duration-200">
             {children}
           </main>
         </div>
       </div>
+      </NotificationProvider>
     </ThemeProvider>
   );
 }

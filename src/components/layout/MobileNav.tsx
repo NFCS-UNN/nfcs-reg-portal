@@ -17,7 +17,8 @@ import {
   Users,
   Settings,
   FolderSync,
-  ClipboardList
+  ClipboardList,
+  Bell,
 } from "lucide-react";
 import { SelectTrigger, SelectValue, SelectPopup, SelectItem, SelectPrimitive } from "@/components/ui/select";
 import { useTheme } from "@/lib/utils/theme";
@@ -97,6 +98,12 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
       roles: ["exco", "super_admin"],
     },
     // Admin Settings
+    {
+      name: "Notification Console",
+      href: "/admin/notifications",
+      icon: Bell,
+      roles: ["super_admin"],
+    },
     {
       name: "System Settings",
       href: "/admin/settings",

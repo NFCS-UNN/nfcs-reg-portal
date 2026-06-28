@@ -6,6 +6,7 @@ import { sendEmail } from "@/lib/email";
 import RegistrationConfirmation from "../../../emails/RegistrationConfirmation";
 import ApprovalNotification from "../../../emails/ApprovalNotification";
 import * as React from "react";
+import { createNotification } from "@/lib/actions/notification.actions";
 
 // Helper to upload passport photo
 async function uploadPassportPhoto(file: File, userId: string): Promise<string> {
@@ -182,6 +183,15 @@ export async function approveMember(memberId: string, excoId: string) {
     console.error("Failed to send approval confirmation email:", emailErr);
   }
 
+  // In-app notification
+  await createNotification({
+    profile_id: memberId,
+    title: "Account Approved ✓",
+    body: "Your NFCS UNN account has been verified and activated. Welcome to the federation!",
+    type: "account_approved",
+    metadata: { approved_by: excoId },
+  });
+
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${memberId}`);
   return { success: true };
@@ -220,6 +230,15 @@ export async function rejectMember(memberId: string, excoId: string) {
   } catch (emailErr) {
     console.error("Failed to send rejection confirmation email:", emailErr);
   }
+
+  // In-app notification
+  await createNotification({
+    profile_id: memberId,
+    title: "Registration Not Approved",
+    body: "Your NFCS UNN account registration was not approved at this time. Please contact an Exco member for assistance.",
+    type: "account_rejected",
+    metadata: { rejected_by: excoId },
+  });
 
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${memberId}`);
@@ -260,6 +279,15 @@ export async function suspendMember(memberId: string, excoId: string) {
     console.error("Failed to send suspension email:", emailErr);
   }
 
+  // In-app notification
+  await createNotification({
+    profile_id: memberId,
+    title: "Account Suspended",
+    body: "Your NFCS UNN account has been suspended. Please contact an Exco member for more information.",
+    type: "account_suspended",
+    metadata: { suspended_by: excoId },
+  });
+
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${memberId}`);
   return { success: true };
@@ -283,6 +311,15 @@ export async function upgradeMemberToAlumnus(memberId: string, excoId: string) {
     action: "upgrade_student_to_alumnus",
     target_type: "profile",
     target_id: memberId,
+  });
+
+  // In-app notification
+  await createNotification({
+    profile_id: memberId,
+    title: "Account Upgraded to Alumnus 🎓",
+    body: "Congratulations! Your account has been upgraded to Alumnus status. You remain part of the NFCS UNN family.",
+    type: "role_changed",
+    metadata: { new_role: "alumnus", changed_by: excoId },
   });
 
   revalidatePath("/admin/members");
@@ -399,28 +436,44 @@ export async function updateMemberRole(
 ) {
   try {
     const updateData: any = { role };
-    // When demoting from exco, clear their position
-    if (role !== "exco") {
-      updateData.position = null;
-    }
+    if (role !== "exco") updateData.position = null;
+
+    // Fetch member name for the notification
+    const { data: targetProfile } = await adminClient
+      .from("profiles")
+      .select("full_name")
+      .eq("id", memberId)
+      .single();
 
     const { error } = await adminClient
       .from("profiles")
       .update(updateData)
       .eq("id", memberId);
 
-    if (error) {
-      return { error: error.message };
-    }
+    if (error) return { error: error.message };
 
     await adminClient.from("audit_log").insert({
       actor_id: excoId,
       action: "change_member_role",
       target_type: "profile",
       target_id: memberId,
-      metadata: {
-        new_role: role,
-      },
+      metadata: { new_role: role },
+    });
+
+    const roleLabels: Record<string, string> = {
+      student: "Student",
+      alumnus: "Alumnus",
+      exco: "Exco Member",
+      super_admin: "Super Administrator",
+    };
+
+    // Notify the affected member
+    await createNotification({
+      profile_id: memberId,
+      title: `Role Updated: ${roleLabels[role] ?? role}`,
+      body: `Your account role has been updated to ${roleLabels[role] ?? role}. If you have questions, contact an Exco member.`,
+      type: "role_changed",
+      metadata: { new_role: role, changed_by: excoId },
     });
 
     revalidatePath("/admin/members");

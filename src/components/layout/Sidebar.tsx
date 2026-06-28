@@ -18,8 +18,10 @@ import {
   FolderSync,
   LogOut,
   ShieldCheck,
-  ClipboardList
+  ClipboardList,
+  Bell,
 } from "lucide-react";
+import { useNotifications } from "@/components/providers/NotificationProvider";
 
 interface NavItem {
   name: string;
@@ -36,6 +38,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isLoading } = useUser();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = async () => {
     await logout();
@@ -97,6 +100,12 @@ export function Sidebar() {
       roles: ["exco", "super_admin"],
     },
     // Super Admin Items
+    {
+      name: "Notification Console",
+      href: "/admin/notifications",
+      icon: Bell,
+      roles: ["super_admin"],
+    },
     {
       name: "System Settings",
       href: "/admin/settings",

@@ -412,6 +412,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          id: string
+          profile_id: string
+          title: string
+          body: string
+          type: string
+          is_read: boolean
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          title: string
+          body: string
+          type: string
+          is_read?: boolean
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          title?: string
+          body?: string
+          type?: string
+          is_read?: boolean
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
